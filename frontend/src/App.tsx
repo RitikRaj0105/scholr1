@@ -18,6 +18,8 @@ import CodeProblem from './pages/dashboard/CodeProblem';
 import Planner from './pages/dashboard/Planner';
 import Career from './pages/dashboard/Career';
 import CareerDetail from './pages/dashboard/CareerDetail';
+import Feed from './pages/dashboard/Feed';
+import Profile from './pages/dashboard/Profile';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminProblems from './pages/admin/AdminProblems';
 import AdminProblemForm from './pages/admin/AdminProblemForm';
@@ -137,6 +139,30 @@ function App() {
         element={
           <ProtectedRoute>
             <CareerDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/feed"
+        element={
+          <ProtectedRoute>
+            <Feed />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/profile"
+        element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/profile/:userId"
+        element={
+          <ProtectedRoute>
+            <Profile />
           </ProtectedRoute>
         }
       />

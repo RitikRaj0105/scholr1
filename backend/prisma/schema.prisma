@@ -140,6 +140,7 @@ model User {
   lastName          String?
   avatarUrl         String?
   bio               String?
+  headline          String?
   phone             String?
   emailVerified     Boolean        @default(false)
   emailVerifyToken  String?
@@ -174,6 +175,16 @@ model User {
   tasks             Task[]
   personalExams     PersonalExam[]
   createdProblems   CodingProblem[] @relation("CreatedProblems")
+  // Social
+  posts             Post[]
+  postLikes         PostLike[]
+  comments          PostComment[]
+  shares            PostShare[]
+  followers         Follow[]        @relation("FollowedBy")
+  following         Follow[]        @relation("Following")
+  blockedUsers      Block[]         @relation("Blocker")
+  blockedBy         Block[]         @relation("Blocked")
+  certificates      Certificate[]
 
   @@index([role])
   @@index([institutionId])
@@ -662,4 +673,125 @@ model LeaderboardEntry {
 
   @@unique([leaderboardId, userId])
   @@index([leaderboardId, score])
+}
+
+// ============================================
+// SOCIAL — LinkedIn-style feed for students
+// ============================================
+
+model Post {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         PostType      @default(POST)
+  content      String        @db.Text
+  visibility   PostVisibility @default(PUBLIC)
+  // Metadata for achievements/certificates
+  achievement  Json?         // { title, subject, score, date }
+  certificate  Json?         // { title, issuer, credentialUrl }
+  // Engagement counters (denormalized for fast feed reads)
+  likeCount    Int           @default(0)
+  commentCount Int           @default(0)
+  shareCount   Int           @default(0)
+
+  likes        PostLike[]
+  comments     PostComment[]
+  shares       PostShare[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([visibility])
+}
+
+enum PostType {
+  POST            // Regular post
+  ACHIEVEMENT     // Exam/coding score achievement
+  CERTIFICATE     // Certification earned
+  MILESTONE       // Streak / level / badge
+}
+
+enum PostVisibility {
+  PUBLIC          // Anyone signed in can see
+  FOLLOWERS_ONLY  // Only followers
+  PRIVATE         // Only the author
+}
+
+model PostLike {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@index([postId])
+}
+
+model PostComment {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+  @@index([userId])
+}
+
+model PostShare {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@index([postId])
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String                                  // Who's doing the following
+  follower    User     @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String                                  // Who's being followed
+  following   User     @relation("FollowedBy", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Block {
+  id         String   @id @default(cuid())
+  blockerId  String   // Who blocked
+  blocker    User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId  String   // Who got blocked
+  blocked    User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+}
+
+model Certificate {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title          String
+  issuer         String   // "Scholr", "Coursera", "AWS", etc.
+  credentialUrl  String?
+  imageUrl       String?
+  issuedAt       DateTime
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
 }

@@ -8,6 +8,7 @@ import plannerRoutes from './planner.routes.js';
 import adminRoutes from './admin.routes.js';
 import teacherRoutes from './teacher.routes.js';
 import careerRoutes from './career.routes.js';
+import socialRoutes from './social.routes.js';
 
 const router = Router();
 
@@ -29,6 +30,7 @@ router.use('/planner', plannerRoutes);
 router.use('/admin', adminRoutes);
 router.use('/teacher', teacherRoutes);
 router.use('/career', careerRoutes);
+router.use('/social', socialRoutes);
 
 // Placeholder mount points — implement when needed:
 // router.use('/classrooms', classroomRoutes);

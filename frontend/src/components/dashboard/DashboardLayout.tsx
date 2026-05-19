@@ -3,12 +3,13 @@ import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Brain, Target, BookOpen, Code2,
   Briefcase, Heart, Users, Settings, LogOut, CalendarDays, ShieldCheck,
-  GraduationCap,
+  GraduationCap, MessageSquare,
 } from 'lucide-react';
 import { useAuthStore, isAdmin, isTeacher } from '@/store/authStore';
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Overview', end: true },
+  { to: '/dashboard/feed', icon: MessageSquare, label: 'Feed' },
   { to: '/dashboard/planner', icon: CalendarDays, label: 'Planner' },
   { to: '/dashboard/ai', icon: Brain, label: 'AI Mentor' },
   { to: '/dashboard/focus', icon: Target, label: 'Focus Mode' },
@@ -115,17 +116,23 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
               Settings
             </NavLink>
             <div className="mt-2 flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white/[0.02]">
-              <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
-                {initials}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[13px] text-bone-50 truncate font-medium">
-                  {user?.firstName} {user?.lastName}
+              <Link
+                to="/dashboard/profile"
+                className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+                title="View profile"
+              >
+                <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                  {initials}
                 </div>
-                <div className="text-[11px] text-bone-400 truncate">
-                  {user?.email}
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] text-bone-50 truncate font-medium">
+                    {user?.firstName} {user?.lastName}
+                  </div>
+                  <div className="text-[11px] text-bone-400 truncate">
+                    {user?.email}
+                  </div>
                 </div>
-              </div>
+              </Link>
               <button
                 onClick={handleLogout}
                 title="Logout"
