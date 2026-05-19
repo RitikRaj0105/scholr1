@@ -14,7 +14,7 @@ const navItems = [
   { to: '/dashboard/focus', icon: Target, label: 'Focus Mode' },
   { to: '/dashboard/tests', icon: BookOpen, label: 'Tests' },
   { to: '/dashboard/code', icon: Code2, label: 'Coding' },
-  { to: '/dashboard/jobs', icon: Briefcase, label: 'Career' },
+  { to: '/dashboard/career', icon: Briefcase, label: 'Career' },
   { to: '/dashboard/wellness', icon: Heart, label: 'Wellness' },
   { to: '/dashboard/classroom', icon: Users, label: 'Classroom' },
 ];

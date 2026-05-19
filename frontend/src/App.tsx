@@ -16,6 +16,8 @@ import TestTake from './pages/dashboard/TestTake';
 import Code from './pages/dashboard/Code';
 import CodeProblem from './pages/dashboard/CodeProblem';
 import Planner from './pages/dashboard/Planner';
+import Career from './pages/dashboard/Career';
+import CareerDetail from './pages/dashboard/CareerDetail';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminProblems from './pages/admin/AdminProblems';
 import AdminProblemForm from './pages/admin/AdminProblemForm';
@@ -119,6 +121,22 @@ function App() {
         element={
           <ProtectedRoute>
             <Planner />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/career"
+        element={
+          <ProtectedRoute>
+            <Career />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/career/:slug"
+        element={
+          <ProtectedRoute>
+            <CareerDetail />
           </ProtectedRoute>
         }
       />
