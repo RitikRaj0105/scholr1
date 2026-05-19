@@ -1,0 +1,52 @@
+# ─────────────────────────────────────────────────────────────
+#  Judge0 self-hosted stack
+#  Run this from /judge0/ folder: docker compose up -d
+#  Judge0 will be available at http://localhost:2358
+# ─────────────────────────────────────────────────────────────
+version: "3.7"
+
+services:
+  server:
+    image: judge0/judge0:1.13.1
+    ports:
+      - "2358:2358"
+    privileged: true
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    depends_on:
+      - db
+      - redis
+    restart: always
+
+  workers:
+    image: judge0/judge0:1.13.1
+    command: ["./scripts/workers"]
+    privileged: true
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    depends_on:
+      - db
+      - redis
+    restart: always
+
+  db:
+    image: postgres:13.0
+    env_file: judge0.conf
+    volumes:
+      - postgres-data:/var/lib/postgresql/data/
+    restart: always
+
+  redis:
+    image: redis:6.0
+    command: [
+      "bash", "-c",
+      'docker-entrypoint.sh --appendonly yes --requirepass "$$REDIS_PASSWORD"'
+    ]
+    env_file: judge0.conf
+    volumes:
+      - redis-data:/data
+    restart: always
+
+volumes:
+  postgres-data:
+  redis-data:
