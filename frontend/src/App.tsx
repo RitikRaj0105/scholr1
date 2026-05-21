@@ -20,10 +20,14 @@ import Career from './pages/dashboard/Career';
 import CareerDetail from './pages/dashboard/CareerDetail';
 import Feed from './pages/dashboard/Feed';
 import Profile from './pages/dashboard/Profile';
+import ProfessionalProfile from './pages/dashboard/ProfessionalProfile';
+import Notifications from './pages/dashboard/Notifications';
+import Onboarding from './pages/onboarding/Onboarding';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminProblems from './pages/admin/AdminProblems';
 import AdminProblemForm from './pages/admin/AdminProblemForm';
 import AdminUsers from './pages/admin/AdminUsers';
+import AdminReports from './pages/admin/AdminReports';
 import { AdminRoute } from './components/auth/AdminRoute';
 import TeacherDashboard from './pages/teacher/TeacherDashboard';
 import TeacherClassrooms from './pages/teacher/TeacherClassrooms';
@@ -150,19 +154,25 @@ function App() {
           </ProtectedRoute>
         }
       />
+      {/* Onboarding */}
+      <Route
+        path="/onboarding"
+        element={<ProtectedRoute><Onboarding /></ProtectedRoute>}
+      />
+
       <Route
         path="/dashboard/profile"
-        element={
-          <ProtectedRoute>
-            <Profile />
-          </ProtectedRoute>
-        }
+        element={<ProtectedRoute><ProfessionalProfile /></ProtectedRoute>}
       />
       <Route
         path="/dashboard/profile/:userId"
+        element={<ProtectedRoute><ProfessionalProfile /></ProtectedRoute>}
+      />
+      <Route
+        path="/dashboard/notifications"
         element={
           <ProtectedRoute>
-            <Profile />
+            <Notifications />
           </ProtectedRoute>
         }
       />
@@ -173,6 +183,7 @@ function App() {
       <Route path="/admin/problems/new" element={<AdminRoute><AdminProblemForm /></AdminRoute>} />
       <Route path="/admin/problems/:slug" element={<AdminRoute><AdminProblemForm /></AdminRoute>} />
       <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+      <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
 
       {/* Teacher routes — gated by TEACHER or ADMIN role */}
       <Route path="/teacher" element={<TeacherRoute><TeacherDashboard /></TeacherRoute>} />

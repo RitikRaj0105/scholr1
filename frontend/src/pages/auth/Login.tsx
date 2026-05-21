@@ -19,14 +19,25 @@ export default function Login() {
     setLoading(true);
     try {
       await login(email, password);
-      // Role-based redirect: each role gets their own home
-      const freshUser = useAuthStore.getState().user;
+      const freshUser = useAuthStore.getState().user as any;
       const role = freshUser?.role;
+
+      // If onboarding not done, send to wizard
+      if (!freshUser?.onboardingDone) {
+        navigate('/onboarding', { replace: true });
+        return;
+      }
+
+      // Role-based redirect
       let target = (location.state as { from?: Location })?.from?.pathname || '/dashboard';
       if (role === 'SUPER_ADMIN' || role === 'SCHOOL_ADMIN' || role === 'COLLEGE_ADMIN') {
         target = '/admin';
       } else if (role === 'TEACHER') {
         target = '/teacher';
+      } else if (role === 'RECRUITER') {
+        target = '/dashboard/feed'; // Recruiters see the feed/professional view
+      } else if (role === 'WORKING_PROFESSIONAL') {
+        target = '/dashboard/feed';
       }
       navigate(target, { replace: true });
     } catch (err: any) {

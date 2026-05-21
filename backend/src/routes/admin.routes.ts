@@ -25,5 +25,12 @@ router.post('/problems/:slug/reject', asyncHandler(ctrl.rejectProblem));
 // User management
 router.get('/users', asyncHandler(ctrl.listUsers));
 router.patch('/users/:userId/role', asyncHandler(ctrl.setUserRole));
+router.post('/users/:userId/suspend', asyncHandler(ctrl.suspendUser));
+router.post('/users/:userId/unsuspend', asyncHandler(ctrl.unsuspendUser));
+
+// Moderation — posts and reports
+router.delete('/posts/:id', asyncHandler(ctrl.adminDeletePost));
+router.get('/reports', asyncHandler(ctrl.listReports));
+router.post('/reports/:id/review', asyncHandler(ctrl.reviewReport));
 
 export default router;

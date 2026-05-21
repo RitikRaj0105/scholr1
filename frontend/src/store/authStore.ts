@@ -7,15 +7,18 @@ export interface User {
   email: string;
   firstName: string | null;
   lastName: string | null;
-  role: 'STUDENT' | 'TEACHER' | 'PARENT' | 'SCHOOL_ADMIN' | 'COLLEGE_ADMIN' | 'RECRUITER' | 'SUPER_ADMIN';
   avatarUrl: string | null;
+  role: 'STUDENT' | 'COLLEGE_STUDENT' | 'TEACHER' | 'PARENT' | 'SCHOOL_ADMIN' | 'COLLEGE_ADMIN' | 'RECRUITER' | 'WORKING_PROFESSIONAL' | 'SUPER_ADMIN';
   subscriptionTier: 'FREE' | 'PRO' | 'INSTITUTION' | 'ENTERPRISE';
   emailVerified: boolean;
+  onboardingDone: boolean;
+  headline: string | null;
 }
 
 // Role helpers — single source of truth
 export const ADMIN_ROLES: User['role'][] = ['SCHOOL_ADMIN', 'COLLEGE_ADMIN', 'SUPER_ADMIN'];
 export const TEACHER_ROLES: User['role'][] = ['TEACHER', ...ADMIN_ROLES];
+export const PROFESSIONAL_ROLES: User['role'][] = ['WORKING_PROFESSIONAL', 'RECRUITER', 'COLLEGE_STUDENT'];
 
 export const isAdmin = (u: User | null): boolean =>
   !!u && ADMIN_ROLES.includes(u.role);

@@ -113,6 +113,23 @@ export const login = async (req: Request, res: Response) => {
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) throw Unauthorized('Invalid email or password');
 
+  // Block suspended users
+  if (user.suspendedAt) {
+    const stillSuspended = !user.suspendedUntil || user.suspendedUntil > new Date();
+    if (stillSuspended) {
+      const reason = user.suspendedReason ? `: ${user.suspendedReason}` : '';
+      const until = user.suspendedUntil
+        ? ` until ${user.suspendedUntil.toISOString().split('T')[0]}`
+        : ' permanently';
+      throw Unauthorized(`Account suspended${until}${reason}`);
+    }
+    // Suspension expired — clear it
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { suspendedAt: null, suspendedUntil: null, suspendedReason: null },
+    });
+  }
+
   await prisma.user.update({
     where: { id: user.id },
     data: { lastLoginAt: new Date() },

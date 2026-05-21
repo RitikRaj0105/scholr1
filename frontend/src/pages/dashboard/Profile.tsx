@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -13,9 +13,12 @@ import {
   Edit3,
   Ban,
   CheckCircle2,
+  Camera,
+  Loader2,
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { PostCard, type PostData, type SocialUser } from '@/components/social/PostCard';
+import { Avatar } from '@/components/social/Avatar';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 
@@ -39,6 +42,9 @@ export default function Profile() {
   const [editing, setEditing] = useState(false);
   const [bio, setBio] = useState('');
   const [headline, setHeadline] = useState('');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   // Use my own id if no userId in URL (i.e., /dashboard/profile)
   const targetId = userId || me?.id;
@@ -123,6 +129,33 @@ export default function Profile() {
     setEditing(true);
   };
 
+  const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarError('Image must be under 5MB');
+      return;
+    }
+    setUploadingAvatar(true);
+    setAvatarError(null);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      await api.post('/social/upload/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      // Refresh profile to get new avatarUrl
+      await qc.invalidateQueries({ queryKey: ['profile', targetId] });
+      // Also refresh auth user (sidebar avatar)
+      await useAuthStore.getState().hydrate();
+    } catch (err: any) {
+      setAvatarError(err?.response?.data?.error?.message || 'Upload failed');
+    } finally {
+      setUploadingAvatar(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+    }
+  };
+
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -181,8 +214,33 @@ export default function Profile() {
           <div className="h-24 bg-gradient-to-br from-violet-500/20 to-cyan-500/10" />
           <div className="px-5 pb-5 -mt-12">
             <div className="flex items-end justify-between gap-3 flex-wrap">
-              <div className="w-24 h-24 rounded-full bg-violet-600 border-4 border-ink-950 flex items-center justify-center text-white text-3xl font-semibold">
-                {initials}
+              <div className="relative group">
+                <div className="rounded-full ring-4 ring-ink-950">
+                  <Avatar user={profile} size={96} />
+                </div>
+                {profile.isMe && (
+                  <>
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      onChange={handleAvatarSelect}
+                      className="hidden"
+                    />
+                    <button
+                      onClick={() => avatarInputRef.current?.click()}
+                      disabled={uploadingAvatar}
+                      className="absolute bottom-1 right-1 w-8 h-8 rounded-full bg-violet-600 hover:bg-violet-500 text-white flex items-center justify-center shadow-lg ring-2 ring-ink-950 disabled:opacity-50 transition-colors"
+                      title="Change profile picture"
+                    >
+                      {uploadingAvatar ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Camera className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 {profile.isMe ? (
@@ -230,6 +288,9 @@ export default function Profile() {
 
             <div className="mt-4">
               <h1 className="font-display text-2xl text-bone-50">{displayName}</h1>
+              {avatarError && (
+                <p className="text-xs text-red-400 mt-1">{avatarError}</p>
+              )}
               {!editing && profile.headline && (
                 <p className="text-sm text-bone-200 mt-1">{profile.headline}</p>
               )}

@@ -1,5 +1,6 @@
 import express from 'express';
 import http from 'node:http';
+import path from 'node:path';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -40,6 +41,15 @@ app.use(cookieParser());
 if (!isProd) app.use(morgan('dev'));
 
 app.use(generalLimiter);
+
+// Serve uploaded files (avatars, post images) as static
+app.use(
+  '/uploads',
+  express.static(path.resolve(process.cwd(), 'uploads'), {
+    maxAge: '7d',
+    fallthrough: false,
+  }),
+);
 
 // ---- Routes ----
 app.use('/api', routes);

@@ -6,6 +6,8 @@ import {
   GraduationCap, MessageSquare,
 } from 'lucide-react';
 import { useAuthStore, isAdmin, isTeacher } from '@/store/authStore';
+import { Avatar } from '@/components/social/Avatar';
+import { NotificationBell } from '@/components/social/NotificationBell';
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Overview', end: true },
@@ -121,9 +123,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
                 className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
                 title="View profile"
               >
-                <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
-                  {initials}
-                </div>
+                <Avatar user={user} size={32} />
                 <div className="flex-1 min-w-0">
                   <div className="text-[13px] text-bone-50 truncate font-medium">
                     {user?.firstName} {user?.lastName}
@@ -144,7 +144,12 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
           </div>
         </aside>
 
-        <main className="flex-1 ml-60 min-h-screen">{children}</main>
+        <main className="flex-1 ml-60 min-h-screen relative">
+          <div className="absolute top-5 right-5 z-30">
+            <NotificationBell />
+          </div>
+          {children}
+        </main>
       </div>
     </div>
   );

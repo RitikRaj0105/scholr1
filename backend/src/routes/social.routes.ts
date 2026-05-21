@@ -2,9 +2,14 @@ import { Router } from 'express';
 import * as ctrl from '../controllers/social.controller.js';
 import { requireAuth } from '../middleware/auth.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { uploadMiddleware } from '../middleware/upload.js';
 
 const router = Router();
 router.use(requireAuth);
+
+// ─── Image uploads ────────────────────────
+router.post('/upload/avatar', uploadMiddleware.single('image'), asyncHandler(ctrl.uploadAvatar));
+router.post('/upload/post-image', uploadMiddleware.single('image'), asyncHandler(ctrl.uploadPostImage));
 
 // ─── Feed ─────────────────────────────────
 router.get('/feed', asyncHandler(ctrl.getFeed));
@@ -24,6 +29,9 @@ router.delete('/comments/:commentId', asyncHandler(ctrl.deleteComment));
 
 // ─── Shares ───────────────────────────────
 router.post('/posts/:id/share', asyncHandler(ctrl.sharePost));
+
+// ─── Reports (any user can report a post) ───────
+router.post('/posts/:id/report', asyncHandler(ctrl.reportPost));
 
 // ─── Profile ──────────────────────────────
 router.patch('/me/profile', asyncHandler(ctrl.updateMyProfile));

@@ -51,6 +51,7 @@ const createPostSchema = z.object({
   content: z.string().min(1).max(5000),
   type: z.enum(['POST', 'ACHIEVEMENT', 'CERTIFICATE', 'MILESTONE']).default('POST'),
   visibility: z.enum(['PUBLIC', 'FOLLOWERS_ONLY', 'PRIVATE']).default('PUBLIC'),
+  imageUrl: z.string().optional(),
   achievement: z
     .object({
       title: z.string(),
@@ -78,6 +79,7 @@ export const createPost = async (req: Request, res: Response) => {
       content: data.content,
       type: data.type,
       visibility: data.visibility,
+      imageUrl: data.imageUrl ?? null,
       achievement: data.achievement ?? undefined,
       certificate: data.certificate ?? undefined,
     },
@@ -204,6 +206,15 @@ export const toggleLike = async (req: Request, res: Response) => {
       prisma.postLike.create({ data: { userId, postId } }),
       prisma.post.update({ where: { id: postId }, data: { likeCount: { increment: 1 } } }),
     ]);
+    // Notify post author
+    const liker = await getDisplayName(userId);
+    await notify({
+      userId: post.userId,
+      fromUserId: userId,
+      type: 'POST_LIKE',
+      title: `${liker} liked your post`,
+      link: `/dashboard/feed`,
+    });
     res.json({ ok: true, liked: true });
   }
 };
@@ -236,6 +247,17 @@ export const addComment = async (req: Request, res: Response) => {
       data: { commentCount: { increment: 1 } },
     }),
   ]);
+
+  // Notify post author
+  const commenterName = await getDisplayName(userId);
+  await notify({
+    userId: post.userId,
+    fromUserId: userId,
+    type: 'POST_COMMENT',
+    title: `${commenterName} commented on your post`,
+    body: content.slice(0, 80),
+    link: '/dashboard/feed',
+  });
 
   res.status(201).json({ ok: true, comment });
 };
@@ -313,11 +335,27 @@ export const follow = async (req: Request, res: Response) => {
   if (blocked.includes(followingId)) throw Forbidden('Cannot follow blocked user');
 
   // Upsert pattern — idempotent
+  const wasFollowing = await prisma.follow.findUnique({
+    where: { followerId_followingId: { followerId, followingId } },
+  });
+
   await prisma.follow.upsert({
     where: { followerId_followingId: { followerId, followingId } },
     create: { followerId, followingId },
     update: {},
   });
+
+  // Only notify on a new follow, not idempotent re-call
+  if (!wasFollowing) {
+    const followerName = await getDisplayName(followerId);
+    await notify({
+      userId: followingId,
+      fromUserId: followerId,
+      type: 'FOLLOW',
+      title: `${followerName} started following you`,
+      link: `/dashboard/profile/${followerId}`,
+    });
+  }
 
   res.json({ ok: true, following: true });
 };
@@ -476,4 +514,115 @@ export const updateMyProfile = async (req: Request, res: Response) => {
     select: { ...safeUserSelect, bio: true },
   });
   res.json({ ok: true, user });
+};
+
+// ─── Notifications helper ──────────────────────
+
+import { saveAvatar, savePostImage, deleteUploadedFile } from '../middleware/upload.js';
+
+async function notify(params: {
+  userId: string;          // who receives
+  fromUserId?: string;     // who triggered
+  type: 'POST_LIKE' | 'POST_COMMENT' | 'FOLLOW';
+  title: string;
+  body?: string;
+  link?: string;
+}) {
+  // Don't notify yourself
+  if (params.fromUserId && params.fromUserId === params.userId) return;
+  try {
+    await prisma.notification.create({
+      data: {
+        userId: params.userId,
+        fromUserId: params.fromUserId,
+        type: params.type,
+        title: params.title,
+        body: params.body,
+        link: params.link,
+      },
+    });
+  } catch (e) {
+    // Swallow — notifications failing shouldn't break the parent action
+    console.error('Notification create failed:', e);
+  }
+}
+
+// Helper to fetch a user's display name
+async function getDisplayName(userId: string): Promise<string> {
+  const u = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { firstName: true, lastName: true, email: true },
+  });
+  if (!u) return 'Someone';
+  if (u.firstName || u.lastName) return `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim();
+  return u.email.split('@')[0];
+}
+
+// ─── Avatar upload ─────────────────────────────
+
+export const uploadAvatar = async (req: Request, res: Response) => {
+  const userId = req.user!.id;
+  if (!req.file) throw BadRequest('No image uploaded');
+
+  // Save new avatar to disk
+  const url = await saveAvatar(req.file);
+
+  // Delete old avatar if it was on our disk
+  const old = await prisma.user.findUnique({ where: { id: userId }, select: { avatarUrl: true } });
+  if (old?.avatarUrl?.startsWith('/uploads/')) {
+    await deleteUploadedFile(old.avatarUrl);
+  }
+
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { avatarUrl: url },
+    select: { id: true, avatarUrl: true },
+  });
+  res.json({ ok: true, user });
+};
+
+// ─── Post image upload (returns URL only) ──────
+
+export const uploadPostImage = async (req: Request, res: Response) => {
+  if (!req.file) throw BadRequest('No image uploaded');
+  const url = await savePostImage(req.file);
+  res.json({ ok: true, url });
+};
+
+// ─── Reports ───────────────────────────────────
+
+const reportSchema = z.object({
+  reason: z.enum([
+    'SPAM',
+    'HARASSMENT',
+    'HATE_SPEECH',
+    'INAPPROPRIATE',
+    'MISINFORMATION',
+    'COPYRIGHT',
+    'OTHER',
+  ]),
+  details: z.string().max(1000).optional(),
+});
+
+export const reportPost = async (req: Request, res: Response) => {
+  const reporterId = req.user!.id;
+  const postId = req.params.id;
+  const { reason, details } = reportSchema.parse(req.body);
+
+  const post = await prisma.post.findUnique({ where: { id: postId } });
+  if (!post) throw NotFound('Post not found');
+  if (post.userId === reporterId) throw BadRequest('Cannot report your own post');
+
+  try {
+    await prisma.report.create({
+      data: { postId, reporterId, reason, details },
+    });
+  } catch (e: any) {
+    if (e.code === 'P2002') {
+      throw BadRequest('You have already reported this post');
+    }
+    throw e;
+  }
+
+  res.status(201).json({ ok: true });
 };

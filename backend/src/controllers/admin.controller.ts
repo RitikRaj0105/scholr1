@@ -209,9 +209,13 @@ export const listUsers = async (req: Request, res: Response) => {
       email: true,
       firstName: true,
       lastName: true,
+      avatarUrl: true,
       role: true,
       subscriptionTier: true,
       createdAt: true,
+      suspendedAt: true,
+      suspendedUntil: true,
+      suspendedReason: true,
     },
     orderBy: { createdAt: 'desc' },
     take: 200,
@@ -285,4 +289,132 @@ export const rejectProblem = async (req: Request, res: Response) => {
     data: { status: 'REJECTED', reviewNote },
   });
   res.json({ ok: true, problem: updated });
+};
+
+// ─── Moderation: posts ───────────────────────────
+
+export const adminDeletePost = async (req: Request, res: Response) => {
+  const post = await prisma.post.findUnique({ where: { id: req.params.id } });
+  if (!post) throw NotFound('Post not found');
+  // Admin can delete any post (overrides ownership check)
+  await prisma.post.delete({ where: { id: post.id } });
+  res.json({ ok: true });
+};
+
+// ─── Moderation: reports ─────────────────────────
+
+export const listReports = async (req: Request, res: Response) => {
+  const { status } = req.query;
+  const reports = await prisma.report.findMany({
+    where: status ? { status: status as 'PENDING' | 'REVIEWED_KEPT' | 'REVIEWED_REMOVED' | 'DISMISSED' } : {},
+    include: {
+      reporter: {
+        select: { id: true, email: true, firstName: true, lastName: true, avatarUrl: true },
+      },
+      post: {
+        select: {
+          id: true,
+          content: true,
+          imageUrl: true,
+          type: true,
+          createdAt: true,
+          user: {
+            select: { id: true, email: true, firstName: true, lastName: true, avatarUrl: true },
+          },
+        },
+      },
+      reviewer: {
+        select: { id: true, firstName: true, lastName: true },
+      },
+    },
+    orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+    take: 200,
+  });
+  res.json({ ok: true, reports });
+};
+
+const reviewReportSchema = z.object({
+  action: z.enum(['REMOVE_POST', 'KEEP_POST', 'DISMISS']),
+  note: z.string().max(500).optional(),
+});
+
+export const reviewReport = async (req: Request, res: Response) => {
+  const adminId = req.user!.id;
+  const { action, note } = reviewReportSchema.parse(req.body);
+  const report = await prisma.report.findUnique({
+    where: { id: req.params.id },
+    include: { post: true },
+  });
+  if (!report) throw NotFound('Report not found');
+  if (report.status !== 'PENDING') throw BadRequest('Report has already been reviewed');
+
+  let newStatus: 'REVIEWED_KEPT' | 'REVIEWED_REMOVED' | 'DISMISSED' = 'DISMISSED';
+  if (action === 'REMOVE_POST') {
+    newStatus = 'REVIEWED_REMOVED';
+    // Delete the post (cascades to reports, likes, comments)
+    if (report.post) {
+      await prisma.post.delete({ where: { id: report.post.id } });
+    }
+  } else if (action === 'KEEP_POST') {
+    newStatus = 'REVIEWED_KEPT';
+    await prisma.report.update({
+      where: { id: report.id },
+      data: { status: newStatus, reviewerId: adminId, reviewNote: note, reviewedAt: new Date() },
+    });
+  } else {
+    await prisma.report.update({
+      where: { id: report.id },
+      data: { status: newStatus, reviewerId: adminId, reviewNote: note, reviewedAt: new Date() },
+    });
+  }
+
+  res.json({ ok: true });
+};
+
+// ─── Moderation: user suspension ─────────────────
+
+const suspendSchema = z.object({
+  reason: z.string().min(1).max(500),
+  durationDays: z.number().int().min(1).max(365).optional(), // omit = permanent
+});
+
+export const suspendUser = async (req: Request, res: Response) => {
+  const adminId = req.user!.id;
+  const target = await prisma.user.findUnique({ where: { id: req.params.userId } });
+  if (!target) throw NotFound('User not found');
+  if (target.id === adminId) throw BadRequest('Cannot suspend yourself');
+  // Don't allow admins to suspend other admins
+  if (['SUPER_ADMIN', 'SCHOOL_ADMIN', 'COLLEGE_ADMIN'].includes(target.role)) {
+    throw BadRequest('Cannot suspend admin accounts');
+  }
+
+  const { reason, durationDays } = suspendSchema.parse(req.body);
+  const suspendedUntil = durationDays
+    ? new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000)
+    : null;
+
+  const updated = await prisma.user.update({
+    where: { id: target.id },
+    data: {
+      suspendedAt: new Date(),
+      suspendedUntil,
+      suspendedReason: reason,
+    },
+    select: { id: true, email: true, suspendedAt: true, suspendedUntil: true, suspendedReason: true },
+  });
+
+  res.json({ ok: true, user: updated });
+};
+
+export const unsuspendUser = async (req: Request, res: Response) => {
+  const user = await prisma.user.update({
+    where: { id: req.params.userId },
+    data: {
+      suspendedAt: null,
+      suspendedUntil: null,
+      suspendedReason: null,
+    },
+    select: { id: true, email: true, suspendedAt: true },
+  });
+  res.json({ ok: true, user });
 };

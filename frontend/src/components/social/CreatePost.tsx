@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -11,9 +11,12 @@ import {
   Lock,
   AlertCircle,
   X,
+  Image as ImageIcon,
+  Loader2,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
+import { Avatar } from './Avatar';
 
 type PostType = 'POST' | 'ACHIEVEMENT' | 'CERTIFICATE' | 'MILESTONE';
 type Visibility = 'PUBLIC' | 'FOLLOWERS_ONLY' | 'PRIVATE';
@@ -49,7 +52,37 @@ export const CreatePost = () => {
   const [certIssuer, setCertIssuer] = useState('');
   const [certUrl, setCertUrl] = useState('');
 
+  // Image upload
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
   const initials = (me?.firstName?.[0] || me?.email?.[0] || '?').toUpperCase();
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image must be under 5MB');
+      return;
+    }
+    setUploadingImage(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await api.post('/social/upload/post-image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setImageUrl(res.data.url);
+    } catch (err: any) {
+      setError(err?.response?.data?.error?.message || 'Image upload failed');
+    } finally {
+      setUploadingImage(false);
+      // Reset input so user can pick same file again
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const reset = () => {
     setContent('');
@@ -61,12 +94,14 @@ export const CreatePost = () => {
     setCertTitle('');
     setCertIssuer('');
     setCertUrl('');
+    setImageUrl(null);
     setError(null);
   };
 
   const create = useMutation({
     mutationFn: async () => {
       const payload: any = { content, type, visibility };
+      if (imageUrl) payload.imageUrl = imageUrl;
       if (type === 'ACHIEVEMENT' && achTitle) {
         payload.achievement = {
           title: achTitle,
@@ -102,9 +137,7 @@ export const CreatePost = () => {
   return (
     <div className="rounded-2xl border border-white/[0.06] bg-ink-900/60 p-4">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-full bg-violet-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
-          {initials}
-        </div>
+        <Avatar user={me} size={40} />
         <div className="flex-1 min-w-0">
           <textarea
             value={content}
@@ -200,6 +233,28 @@ export const CreatePost = () => {
             )}
           </AnimatePresence>
 
+          {/* Image preview */}
+          <AnimatePresence>
+            {imageUrl && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden mt-3"
+              >
+                <div className="relative rounded-lg border border-white/[0.08] overflow-hidden">
+                  <img src={imageUrl} alt="" className="w-full max-h-80 object-cover" />
+                  <button
+                    onClick={() => setImageUrl(null)}
+                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-ink-950/80 hover:bg-ink-950 text-bone-200 flex items-center justify-center"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {error && (
             <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/30">
               <AlertCircle className="w-3.5 h-3.5 text-red-400" />
@@ -210,6 +265,26 @@ export const CreatePost = () => {
           {/* Action bar */}
           <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-1 flex-wrap">
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingImage}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium border border-white/[0.06] text-bone-300 hover:bg-white/[0.03] transition-colors disabled:opacity-50"
+              >
+                {uploadingImage ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <ImageIcon className="w-3 h-3" />
+                )}
+                Image
+              </button>
               <button
                 onClick={() => setType(type === 'ACHIEVEMENT' ? 'POST' : 'ACHIEVEMENT')}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors ${

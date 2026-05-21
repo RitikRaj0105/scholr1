@@ -8,6 +8,7 @@ import {
   LogOut,
   ArrowLeft,
   Settings,
+  Flag,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
@@ -15,6 +16,7 @@ const navItems = [
   { to: '/admin', icon: LayoutDashboard, label: 'Overview', end: true },
   { to: '/admin/problems', icon: Code2, label: 'Coding Problems' },
   { to: '/admin/users', icon: Users, label: 'Users' },
+  { to: '/admin/reports', icon: Flag, label: 'Reports' },
 ];
 
 export const AdminLayout = ({ children }: { children: React.ReactNode }) => {
