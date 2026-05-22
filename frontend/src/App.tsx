@@ -22,6 +22,12 @@ import Feed from './pages/dashboard/Feed';
 import Profile from './pages/dashboard/Profile';
 import ProfessionalProfile from './pages/dashboard/ProfessionalProfile';
 import Notifications from './pages/dashboard/Notifications';
+import Messages from './pages/dashboard/Messages';
+import Jobs from './pages/dashboard/Jobs';
+import JobDetail from './pages/dashboard/JobDetail';
+import JobApplications from './pages/dashboard/JobApplications';
+import MyApplications from './pages/dashboard/MyApplications';
+import MyPostedJobs from './pages/dashboard/MyPostedJobs';
 import Onboarding from './pages/onboarding/Onboarding';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminProblems from './pages/admin/AdminProblems';
@@ -176,6 +182,17 @@ function App() {
           </ProtectedRoute>
         }
       />
+
+      {/* Messages */}
+      <Route path="/dashboard/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+      <Route path="/dashboard/messages/:userId" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+
+      {/* Jobs */}
+      <Route path="/dashboard/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
+      <Route path="/dashboard/jobs/me/posted" element={<ProtectedRoute><MyPostedJobs /></ProtectedRoute>} />
+      <Route path="/dashboard/jobs/me/applications" element={<ProtectedRoute><MyApplications /></ProtectedRoute>} />
+      <Route path="/dashboard/jobs/:id" element={<ProtectedRoute><JobDetail /></ProtectedRoute>} />
+      <Route path="/dashboard/jobs/:id/applications" element={<ProtectedRoute><JobApplications /></ProtectedRoute>} />
 
       {/* Admin routes — gated by ADMIN role */}
       <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Brain, Target, BookOpen, Code2,
   Briefcase, Heart, Users, Settings, LogOut, CalendarDays, ShieldCheck,
-  GraduationCap, MessageSquare,
+  GraduationCap, MessageSquare, Send, HardHat,
 } from 'lucide-react';
 import { useAuthStore, isAdmin, isTeacher } from '@/store/authStore';
 import { Avatar } from '@/components/social/Avatar';
@@ -12,6 +12,8 @@ import { NotificationBell } from '@/components/social/NotificationBell';
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Overview', end: true },
   { to: '/dashboard/feed', icon: MessageSquare, label: 'Feed' },
+  { to: '/dashboard/messages', icon: Send, label: 'Messages' },
+  { to: '/dashboard/jobs', icon: HardHat, label: 'Jobs' },
   { to: '/dashboard/planner', icon: CalendarDays, label: 'Planner' },
   { to: '/dashboard/ai', icon: Brain, label: 'AI Mentor' },
   { to: '/dashboard/focus', icon: Target, label: 'Focus Mode' },

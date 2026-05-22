@@ -7,7 +7,8 @@ import {
   MapPin, Building2, Calendar, Briefcase, GraduationCap, Award,
   Github, Linkedin, Globe, Camera, Loader2, CheckCircle2, UserPlus,
   BookOpen, Target, Sparkles, AlertCircle, TrendingUp, FileText,
-  X, Check, ChevronDown, ChevronUp, Upload, User,
+  X, Check, ChevronDown, ChevronUp, Upload, User, MessageSquare, Shield,
+  Eye, EyeOff,
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Avatar } from '@/components/social/Avatar';
@@ -717,20 +718,29 @@ export default function ProfessionalProfile() {
                     )}
                   </>
                 ) : (
-                  <button
-                    onClick={() => followMut.mutate()}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-colors ${
-                      profile.isFollowedByMe
-                        ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15'
-                        : 'bg-violet-600 hover:bg-violet-500 text-white'
-                    }`}
-                  >
-                    {profile.isFollowedByMe ? (
-                      <><CheckCircle2 className="w-3.5 h-3.5" />Following</>
-                    ) : (
-                      <><UserPlus className="w-3.5 h-3.5" />Follow</>
-                    )}
-                  </button>
+                  <>
+                    <Link
+                      to={`/dashboard/messages/${targetId}`}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-zinc-700 text-zinc-200 text-xs hover:bg-zinc-800 transition-colors"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      Message
+                    </Link>
+                    <button
+                      onClick={() => followMut.mutate()}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-colors ${
+                        profile.isFollowedByMe
+                          ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15'
+                          : 'bg-violet-600 hover:bg-violet-500 text-white'
+                      }`}
+                    >
+                      {profile.isFollowedByMe ? (
+                        <><CheckCircle2 className="w-3.5 h-3.5" />Following</>
+                      ) : (
+                        <><UserPlus className="w-3.5 h-3.5" />Follow</>
+                      )}
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -804,6 +814,17 @@ export default function ProfessionalProfile() {
                   })}
                 </div>
               </Section>
+            )}
+
+            {/* Privacy settings — only visible to profile owner */}
+            {isMe && (
+              <PrivacySection
+                profile={profile}
+                onUpdate={async (patch) => {
+                  await api.patch('/profile/me', patch);
+                  invalidateProfile();
+                }}
+              />
             )}
 
             {/* Education */}
@@ -1040,3 +1061,116 @@ export default function ProfessionalProfile() {
 }
 
 // End of ProfessionalProfile
+
+// ─── Privacy Section ────────────────────────────────
+
+function PrivacySection({
+  profile,
+  onUpdate,
+}: {
+  profile: any;
+  onUpdate: (patch: Record<string, boolean>) => Promise<void>;
+}) {
+  const [saving, setSaving] = useState<string | null>(null);
+
+  const toggle = async (key: string, current: boolean) => {
+    setSaving(key);
+    try {
+      await onUpdate({ [key]: !current });
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const fields: { key: string; label: string; description: string; value: string | null }[] = [
+    {
+      key: 'showPhone',
+      label: 'Phone number',
+      description: 'Show your phone number on your public profile',
+      value: profile.phone,
+    },
+    {
+      key: 'showEmail',
+      label: 'Email address',
+      description: 'Show your email on your public profile',
+      value: profile.email,
+    },
+    {
+      key: 'showLocation',
+      label: 'Location',
+      description: 'Show your city, state, and country',
+      value: [profile.city, profile.state, profile.country].filter(Boolean).join(', ') || null,
+    },
+    {
+      key: 'showDob',
+      label: 'Date of birth',
+      description: 'Show your date of birth',
+      value: profile.dob ? new Date(profile.dob).toLocaleDateString() : null,
+    },
+  ];
+
+  return (
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
+      <div className="flex items-center gap-2 mb-1">
+        <Shield className="w-4 h-4 text-violet-400" />
+        <h3 className="font-semibold text-white text-sm">Privacy Settings</h3>
+      </div>
+      <p className="text-xs text-zinc-500 mb-4">
+        Control what's visible when others view your profile.
+      </p>
+
+      <div className="space-y-2">
+        {fields.map((f) => {
+          const enabled = profile[f.key] !== false;
+          return (
+            <div
+              key={f.key}
+              className="flex items-start justify-between gap-3 py-3 border-t border-zinc-800 first:border-t-0"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  {enabled ? (
+                    <Eye className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                  ) : (
+                    <EyeOff className="w-3.5 h-3.5 text-zinc-500 flex-shrink-0" />
+                  )}
+                  <p className="text-sm text-white font-medium">{f.label}</p>
+                </div>
+                <p className="text-[11px] text-zinc-500 mt-0.5 ml-5">{f.description}</p>
+                {f.value && (
+                  <p className="text-[11px] text-zinc-400 mt-1 ml-5 truncate">
+                    Current: <span className="text-zinc-300">{f.value}</span>
+                  </p>
+                )}
+                {!f.value && (
+                  <p className="text-[11px] text-amber-500/80 mt-1 ml-5">Not set yet</p>
+                )}
+              </div>
+
+              <button
+                onClick={() => toggle(f.key, enabled)}
+                disabled={saving === f.key}
+                className={`relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
+                  enabled ? 'bg-violet-600' : 'bg-zinc-700'
+                }`}
+              >
+                <span
+                  className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                    enabled ? 'translate-x-5' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 p-3 rounded-lg bg-violet-500/[0.04] border border-violet-500/15">
+        <p className="text-[11px] text-zinc-400">
+          <Shield className="w-3 h-3 inline-block mr-1 text-violet-400" />
+          When you apply for a job, the employer can see your full contact info regardless of these settings.
+        </p>
+      </div>
+    </div>
+  );
+}

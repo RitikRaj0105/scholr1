@@ -91,6 +91,24 @@ enum JobType {
   INTERNSHIP
   CONTRACT
   FREELANCE
+  GIG          // Labour, daily wage, domestic services
+}
+
+enum JobCategory {
+  TECH               // Software, IT, data
+  PROFESSIONAL       // Office, business, finance
+  EDUCATION          // Teaching, tutoring
+  HEALTHCARE         // Medical, nursing
+  DRIVER             // Driver, delivery
+  COOK               // Cook, chef, kitchen helper
+  HOUSEHOLD          // Maid, cleaner, caretaker
+  SECURITY           // Security guard, watchman
+  LABOUR             // Construction, factory, daily wage
+  ELECTRICIAN        // Electrician, plumber, carpenter
+  GARDENER           // Gardening, landscaping
+  BEAUTY             // Salon, beautician
+  RETAIL             // Shop, store
+  OTHER
 }
 
 enum ApplicationStatus {
@@ -162,6 +180,11 @@ model User {
   websiteUrl        String?
   profileData       Json?          // Role-specific structured data (school info, company info, etc.)
   onboardingDone    Boolean        @default(false)
+  // Privacy settings — control which contact fields are public on profile
+  showPhone         Boolean        @default(false)
+  showEmail         Boolean        @default(false)
+  showLocation      Boolean        @default(true)
+  showDob           Boolean        @default(false)
   emailVerified     Boolean        @default(false)
   emailVerifyToken  String?
   suspendedAt       DateTime?
@@ -584,11 +607,16 @@ model Job {
   location      String?
   remote        Boolean    @default(false)
   type          JobType    @default(FULL_TIME)
+  category      JobCategory @default(OTHER)
   description   String     @db.Text
   requirements  String[]   @default([])
   skills        String[]   @default([])
   salaryMin     Int?
   salaryMax     Int?
+  // Gig fields
+  dailyWage     Int?       // Per day rate for gig work
+  payPeriod     String?    // "per day" | "per hour" | "per month"
+  contactPhone  String?    // Direct contact number for blue-collar listings
   currency      String     @default("INR")
   applications  Application[]
   postedAt      DateTime   @default(now())
@@ -596,6 +624,7 @@ model Job {
   isActive      Boolean    @default(true)
 
   @@index([type, isActive])
+  @@index([category, isActive])
   @@index([recruiterId])
 }
 

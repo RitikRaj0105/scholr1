@@ -30,8 +30,29 @@ const publicUserSelect = {
   resumeUrl: true,
   profileData: true,
   onboardingDone: true,
+  // Privacy
+  showPhone: true,
+  showEmail: true,
+  showLocation: true,
+  showDob: true,
   createdAt: true,
 };
+
+// Apply privacy filtering — when viewer isn't the profile owner, hide
+// contact fields that the owner has chosen to keep private.
+function applyPrivacy<T extends Record<string, any>>(user: T, isOwner: boolean): T {
+  if (isOwner) return user;
+  const filtered = { ...user };
+  if (!user.showPhone) filtered.phone = null;
+  if (!user.showEmail) filtered.email = null;
+  if (!user.showDob) filtered.dob = null;
+  if (!user.showLocation) {
+    filtered.country = null;
+    filtered.state = null;
+    filtered.city = null;
+  }
+  return filtered;
+}
 
 // ─── Profile strength calculator ─────────────
 
@@ -133,7 +154,7 @@ export const getProfile = async (req: Request, res: Response) => {
   res.json({
     ok: true,
     profile: {
-      ...user,
+      ...applyPrivacy(user, viewerId === targetId),
       strengthScore: score,
       missingFields: missing,
       isMe: viewerId === targetId,
@@ -159,6 +180,11 @@ const updateProfileSchema = z.object({
   linkedinUrl: z.string().url().optional().nullable(),
   portfolioUrl: z.string().url().optional().nullable(),
   websiteUrl: z.string().url().optional().nullable(),
+  // Privacy toggles
+  showPhone: z.boolean().optional(),
+  showEmail: z.boolean().optional(),
+  showLocation: z.boolean().optional(),
+  showDob: z.boolean().optional(),
 });
 
 export const updateProfile = async (req: Request, res: Response) => {
