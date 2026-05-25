@@ -1,187 +1,180 @@
-# Privacy + Messages + Jobs — Delivery
+# Full Classroom + Light/Dark Theme — Delivery
 
-Three new features in one delivery:
+Two big things in this delivery:
 
-1. **Privacy controls** — hide phone, email, location, or date of birth from public view
-2. **Direct messaging** — DM any user, see conversations list, unread counts, real-time-ish polling
-3. **Jobs board** — post and apply for jobs across 14 categories, including blue-collar/daily-wage work (driver, cook, household help, security guard, labour, electrician, gardener, beauty, retail, etc.)
+1. **Full classroom system** — students and teachers share one classroom hub. Each classroom has a Stream (announcements), Roster (with live attendance %), Attendance (mark with animated check pops), Materials (notes/videos/links), and Settings.
+2. **Light + Dark theme toggle** — every page works in both modes. CSS variables drive everything so the switch is instant and smooth. Toggle in the top-right of every dashboard page.
+
+All actions have purposeful animations — count-pulses when stats change, animated progress bars on attendance %, layout animations on the tab indicator, slide-stagger reveals for lists.
 
 ---
 
 ## Install
 
-### 1. Extract the zip
-
 ```powershell
-Expand-Archive C:\Users\rraj8\Downloads\scholr-privacy-messages-jobs.zip -DestinationPath C:\Users\rraj8\scholr -Force
+Expand-Archive C:\Users\rraj8\Downloads\scholr-classroom-themes.zip -DestinationPath C:\Users\rraj8\scholr -Force
 ```
 
-### 2. Push the schema changes to your database
-
-The schema adds:
-- 4 privacy fields to `User` (`showPhone`, `showEmail`, `showLocation`, `showDob`)
-- 4 fields to `Job` (`category`, `dailyWage`, `payPeriod`, `contactPhone`)
-- `GIG` value to `JobType` enum
-- New `JobCategory` enum with 14 categories
+Push the schema (new models: ClassroomAnnouncement, ClassroomMaterial, AttendanceSession, AttendanceRecord):
 
 ```powershell
 cd C:\Users\rraj8\scholr\backend
 npx prisma db push
 ```
 
-You should see: *"Your database is now in sync with your Prisma schema."*
-
-### 3. Restart the backend
+Restart backend:
 
 ```powershell
-# Ctrl+C in backend window, then:
+# Ctrl+C, then:
 npm run dev
 ```
 
-### 4. Frontend hot-reloads
+Frontend hot-reloads.
 
-If not: Ctrl+C in frontend window → `npm run dev`
+---
+
+## What's new in the classroom
+
+### Hub at `/dashboard/classroom`
+- Two sections: "Teaching" (classrooms you run) and "Enrolled" (classrooms you're a student in)
+- Each card shows the join code (teachers only), schedule, banner colour, student/material/post counts
+- "Create classroom" button for teachers, "Join with code" for students — both as smooth modal flows
+- Empty state with friendly CTA
+
+### Classroom detail at `/dashboard/classroom/:id`
+A coloured hero banner with the class name, schedule, join code (with copy button → animated checkmark), and a "Join meeting" link if the teacher set a Zoom/Meet URL.
+
+Five tabs with an animated sliding indicator:
+
+| Tab | What teachers can do | What students see |
+|---|---|---|
+| **Stream** | Post announcements (with pinning) | Read announcements, get notified |
+| **Roster** | View students, see each student's attendance %, message or remove | View classmates, message them |
+| **Attendance** | Mark Present/Absent/Late/Excused per session, bulk-mark all, animated counters, save bar | See their own attendance history |
+| **Materials** | Add PDFs/videos/links/docs with type tags | Browse and click through |
+| **Settings** | Edit details, regenerate code, archive, delete | (Hidden) |
+
+### Animations everywhere
+
+- **Tab switching** — animated underline pill that slides between tabs
+- **Attendance marking** — each status button has a spring-pop when you tap it, the count card above updates with a pulse animation
+- **Saving attendance** — the Save button morphs through "Save → Saving… → Saved!" with checkmark
+- **Roster attendance bars** — fill from 0 to actual % with eased animation on first load
+- **Cards** — stagger-fade-in based on index
+- **Modals** — spring-scale entrance with backdrop blur
+- **Copy code button** — Copy icon → Check icon with rotation when copied
+- **Materials cards** — slide-in from left, scale-up on hover
+- **Hero banner content** — text elements fade in with delays for a cinematic feel
+- **Loading states** — shimmer cards instead of bare spinners
+
+---
+
+## Light/Dark theme
+
+A **Sun/Moon toggle** sits in the top-right of every dashboard page (next to the bells). Click it — the entire UI smoothly transitions between dark and light. Preference saves to localStorage; refresh and it remembers.
+
+### How it works
+
+- A `themeStore` (Zustand + persist) holds the active theme and applies a `dark`/`light` class to `<html>`
+- CSS variables in `index.css` define `--bg-base`, `--bg-card`, `--text-primary`, `--border-subtle`, etc. for both themes
+- Utility classes like `t-card`, `t-text-primary`, `t-bg-base` use those variables — so any component using them auto-themes
+- Color transitions are 300ms ease for a smooth feel, not a jarring flip
+
+### Light mode palette
+- Background: soft warm grey (`#f7f7f5`)
+- Cards: pure white with subtle slate borders
+- Text: deep slate (`#0f172a`) primary, mid slate secondary
+- Accent: violet `#7c3aed` (slightly deeper than dark mode's `#8b5cf6` for better contrast on white)
+
+### Dark mode palette (unchanged)
+- Background: near-black (`#0a0a0f`)
+- Cards: slightly lighter (`#18181f`)
+- Text: bone-50/bone-200/bone-400
+- Accent: violet `#8b5cf6`
 
 ---
 
 ## Test it
 
-### Privacy controls
-
-1. Go to **`/dashboard/profile`** (your own profile)
-2. Scroll down to **"Privacy Settings"** card (only visible to you on your own profile)
-3. Toggle off **Phone number** → save
-4. Open an incognito window, sign in as a different user
-5. Visit your profile from that other account → phone should no longer show
-6. Toggle it back on → it reappears
-
-The toggles are independent for: phone, email, location (city/state/country), and date of birth.
-
-### Direct messaging
-
-1. As **User A**, visit User B's profile
-2. Click the new **"Message"** button next to Follow
-3. Type a message → press Enter (or Send)
-4. Sign in as **User B**, click **Messages** in the sidebar
-5. See the conversation with User A in the left panel, click to open
-6. Reply → message appears immediately
-7. Notice the unread badge in the conversations list
-8. Mobile view: list and thread switch full-width (responsive)
-
-The thread auto-polls every 5 seconds, so new messages appear without a refresh.
-
-### Jobs board
-
-1. Click **Jobs** in the sidebar
-2. Click **"+ Post a job"**
-3. Try posting a gig-style job:
-   - Title: *"Cook needed for small family"*
-   - Posted by: *"Sharma family"*
-   - Location: *"Sector 21, Noida"*
-   - Category: **Cook**
-   - Job type: **Gig / Daily-wage** ← notice the form switches
-   - Daily wage: *600*
-   - Pay period: *per day*
-   - Contact phone: your number
-   - Description: write a few lines
-   - Click **Post job**
-4. You land on the detail page. From another account:
-   - Browse `/dashboard/jobs`, filter by **Cook** category
-   - Open your listing
-   - Either tap the **phone number** (gig jobs show a direct-call link) or click **Apply now**
-5. After applying, the original poster sees the applicant in their **"View applications"** page with the applicant's full profile + contact info.
-
-Try posting a tech job too — switching **Job type** to *Full-time* swaps the daily-wage field out for salary range fields.
+1. **Create a classroom** — log in as anyone → `/dashboard/classroom` → Create classroom → name it, pick a colour, save. You land on the detail page with the banner in your chosen colour.
+2. **Copy the join code** — click the code in the hero → see the icon swap to a checkmark.
+3. **Join from another account** — sign up as a different user → `/dashboard/classroom` → Join with code → paste it.
+4. **Post an announcement** as the teacher — go to Stream tab → click the dashed prompt → write a title + content → optionally pin → post. Watch it slide in.
+5. **Mark attendance** — Attendance tab → use the bulk "Mark all as Present" button (or click each student's status). Watch the count cards spring-update. Hit Save → button morphs through states.
+6. **View attendance %** — Roster tab → each student now shows their attendance % with an animated bar.
+7. **Add materials** — Materials tab → add a YouTube link or PDF URL → tag the type → save.
+8. **Toggle theme** — click the sun/moon icon top-right. Whole UI smoothly switches. Toggle a few times — every panel and card updates.
+9. **Customise** — Settings tab → change theme colour, schedule, meeting link → save. Hero banner updates instantly.
 
 ---
 
-## What changed in your codebase
+## Files
 
 ### Backend
 
 | File | What |
 |---|---|
-| `prisma/schema.prisma` | Added 4 privacy fields on User. Added `JobCategory` enum + `GIG` to JobType. Added `category`, `dailyWage`, `payPeriod`, `contactPhone` to Job. |
-| `src/controllers/profile.controller.ts` | Added `applyPrivacy()` helper that strips hidden fields when someone else views the profile. Privacy toggles added to update schema. |
-| `src/controllers/messages.controller.ts` | NEW — conversation list, thread, send, unread count, delete |
-| `src/controllers/jobs.controller.ts` | NEW — list (with category/type/search filters), create, update, delete, apply, my-applications, my-listings, applicants-for-my-job |
-| `src/routes/messages.routes.ts` | NEW |
-| `src/routes/jobs.routes.ts` | NEW |
-| `src/routes/index.ts` | Mounts `/api/messages` and `/api/jobs` |
+| `prisma/schema.prisma` | Extended `Classroom` with `bannerColor`, `meetingLink`, `grade`, `schedule`, `archived`. Added `ClassroomAnnouncement`, `ClassroomMaterial`, `MaterialType` enum, `AttendanceSession`, `AttendanceRecord`, `AttendanceStatus` enum. |
+| `src/controllers/classroom.controller.ts` | NEW — 21 endpoints covering all classroom features |
+| `src/routes/classroom.routes.ts` | NEW |
+| `src/routes/index.ts` | Mounts `/api/classroom` |
 
 ### Frontend
 
 | File | What |
 |---|---|
-| `pages/dashboard/Messages.tsx` | NEW — list + thread chat UI |
-| `pages/dashboard/Jobs.tsx` | NEW — board with 14 categories, post-job modal |
-| `pages/dashboard/JobDetail.tsx` | NEW — full job view with Apply + Message + direct-call (gig) |
-| `pages/dashboard/JobApplications.tsx` | NEW — applicants view for job posters |
-| `pages/dashboard/MyApplications.tsx` | NEW |
-| `pages/dashboard/MyPostedJobs.tsx` | NEW |
-| `pages/dashboard/ProfessionalProfile.tsx` | Added Message button on others' profiles + Privacy Settings card on your own |
-| `components/dashboard/DashboardLayout.tsx` | Added **Messages** and **Jobs** to sidebar nav |
-| `App.tsx` | Added 7 new routes |
+| `pages/dashboard/classroom/ClassroomHub.tsx` | NEW — list + create/join modals |
+| `pages/dashboard/classroom/ClassroomDetail.tsx` | NEW — hero banner + tab system |
+| `components/classroom/ClassroomStream.tsx` | NEW — announcements |
+| `components/classroom/ClassroomRoster.tsx` | NEW — students + attendance % |
+| `components/classroom/ClassroomAttendance.tsx` | NEW — mark + history |
+| `components/classroom/ClassroomMaterials.tsx` | NEW — files/links library |
+| `components/classroom/ClassroomSettings.tsx` | NEW — edit/archive/delete |
+| `components/ThemeToggle.tsx` | NEW — animated sun/moon button |
+| `store/themeStore.ts` | NEW — Zustand store with persistence |
+| `styles/index.css` | Added CSS variables for both themes, animation keyframes, t-* utility classes |
+| `components/dashboard/DashboardLayout.tsx` | Theme toggle added, theme-aware backgrounds |
+| `main.tsx` | Imports themeStore so theme applies on first paint |
+| `App.tsx` | Added classroom routes |
 
 ---
 
-## How privacy works under the hood
-
-When you turn off a field (say, *phone*):
-- Your DB record keeps the phone number — nothing is deleted
-- But on profile fetches, `applyPrivacy()` strips it from the response **before** sending
-- It runs server-side, so a curious user can't bypass it by inspecting the API
-- Toggle it back on and it reappears immediately
-
-**Exception:** when someone applies to your job, the job poster gets full contact info regardless. This is intentional — if you're applying for work, the employer needs to be able to reach you. There's a small note about this on the privacy card.
-
----
-
-## How jobs work
-
-- **Anyone signed in** can post a job (not just recruiters)
-- Listings show a **direct phone** button when the job is gig-type — perfect for low-literacy / first-time-online workers who'd rather call than chat
-- For salaried jobs, applicants can click **Apply now** with an optional cover letter
-- Posters can see all applicants with their phone, email, skills, resume, and a **Message** button to start a conversation
-- Applications also fire a notification to the poster
-
----
-
-## API reference
+## API endpoints
 
 ```
-# Messages
-GET    /api/messages/conversations           List with unread counts
-GET    /api/messages/unread-count            For nav badge
-GET    /api/messages/:userId                 Get thread with one user
-POST   /api/messages/:userId                 Send a message
-DELETE /api/messages/message/:id             Delete own message
+GET    /api/classroom/my                            My classrooms (teacher + student)
+POST   /api/classroom/join                          Join via code { code }
+POST   /api/classroom                               Create classroom
+GET    /api/classroom/:id                           Detail
+PATCH  /api/classroom/:id                           Update
+DELETE /api/classroom/:id                           Delete
+POST   /api/classroom/:id/archive                   Archive/unarchive
+POST   /api/classroom/:id/regenerate-code           New join code
 
-# Jobs
-GET    /api/jobs?category=X&type=Y&search=Z  List with filters
-GET    /api/jobs/me/posted                   My listings
-GET    /api/jobs/me/applications             My applications
-GET    /api/jobs/:id                         Single job
-GET    /api/jobs/:id/applications            Applicants (owner only)
-POST   /api/jobs                             Create
-PATCH  /api/jobs/:id                         Update own
-DELETE /api/jobs/:id                         Delete own
-POST   /api/jobs/:id/apply                   Apply { coverLetter?, resumeUrl? }
+GET    /api/classroom/:id/roster                    Student list
+DELETE /api/classroom/:id/students/:userId          Remove student
+POST   /api/classroom/:id/leave                     Leave (student)
 
-# Profile (privacy)
-PATCH  /api/profile/me                       Now accepts:
-                                             { showPhone, showEmail, showLocation, showDob }
+GET    /api/classroom/:id/announcements             List
+POST   /api/classroom/:id/announcements             Create
+PATCH  /api/classroom/:id/announcements/:aid        Update
+DELETE /api/classroom/:id/announcements/:aid        Delete
+
+GET    /api/classroom/:id/materials                 List
+POST   /api/classroom/:id/materials                 Add
+DELETE /api/classroom/:id/materials/:mid            Remove
+
+POST   /api/classroom/:id/attendance                Mark { date, topic?, records[] }
+GET    /api/classroom/:id/attendance                Recent sessions
+GET    /api/classroom/:id/attendance/stats          Per-student aggregate
 ```
 
 ---
 
 ## Notes
 
-- The 14 job categories are: **Tech**, **Professional/Office**, **Education**, **Healthcare**, **Driver**, **Cook**, **Household help**, **Security guard**, **Labour/Construction**, **Electrician/Plumber**, **Gardener**, **Beauty/Salon**, **Retail/Shop**, **Other**
-- Messages poll every 5 seconds when the thread is open, and every 15 seconds for the conversations list. For true real-time you'd hook up Socket.io (the app already has it set up for other features).
-- Block list is respected — if you block someone, you won't see their messages or jobs, and they can't message you.
-- This delivery does **not** add filters by salary range / wage on the jobs board — let me know if you want that next.
-
----
-
-Tell me if anything breaks or behaves unexpectedly. The new pages are functional but the visual polish can be tightened up later (e.g. mobile back-button on Messages thread, applicant filtering on the JobApplications page).
+- The classroom system uses the same Classroom model from the old `/teacher/*` flow. Teachers' old classrooms are visible in the new hub automatically.
+- The light theme is a thoughtful, complete palette — not just inverted dark mode. Borders are slate, not light grey; the accent is a touch deeper for legibility on white.
+- All animations use Framer Motion's spring physics (not linear easing) so they feel responsive, not robotic.
+- For students, the attendance tab shows their *own* records — they can't see other students' attendance.
+- Announcements fire notifications to all enrolled students via the existing notification system (the bell icon in the topbar).

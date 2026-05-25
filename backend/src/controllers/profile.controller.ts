@@ -110,6 +110,20 @@ export const getProfile = async (req: Request, res: Response) => {
       education: { orderBy: { startYear: 'desc' } },
       workExperiences: { orderBy: { startDate: 'desc' } },
       certificates: { orderBy: { issuedAt: 'desc' } },
+      serviceProfile: {
+        select: {
+          id: true,
+          category: true,
+          customCategory: true,
+          title: true,
+          rate: true,
+          ratePeriod: true,
+          avgRating: true,
+          ratingCount: true,
+          isActive: true,
+          isVerified: true,
+        },
+      },
       _count: {
         select: {
           followers: true,
@@ -196,6 +210,32 @@ export const updateProfile = async (req: Request, res: Response) => {
     data,
     select: publicUserSelect,
   });
+
+  // Sync the service profile if one exists — keeps location, skills, name
+  // consistent without the user having to update both places.
+  const svcProfile = await prisma.serviceProfile.findUnique({
+    where: { userId },
+    select: { id: true, skills: true, serviceArea: true },
+  });
+  if (svcProfile) {
+    const syncPatch: any = {};
+
+    // If skills changed in main profile, merge into service skills
+    if (data.skills) {
+      const merged = Array.from(new Set([...(data.skills as string[]), ...(svcProfile.skills || [])]));
+      syncPatch.skills = merged;
+    }
+
+    // If location changed and service profile didn't have a custom area, sync it
+    if ((data.city || data.state) && !svcProfile.serviceArea) {
+      const parts = [data.city || user.city, data.state || user.state].filter(Boolean);
+      if (parts.length) syncPatch.serviceArea = parts.join(', ');
+    }
+
+    if (Object.keys(syncPatch).length > 0) {
+      await prisma.serviceProfile.update({ where: { userId }, data: syncPatch });
+    }
+  }
 
   res.json({ ok: true, user });
 };

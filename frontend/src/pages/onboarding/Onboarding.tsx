@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   User, Mail, Phone, Calendar, MapPin, ChevronRight, ChevronLeft,
   BookOpen, GraduationCap, Briefcase, Users, Building2, Sparkles,
-  Check, Upload, Loader2,
+  Check, Upload, Loader2, Wrench,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
@@ -55,6 +55,13 @@ const ROLES = [
     icon: Briefcase,
     desc: 'Industry professional upskilling or exploring roles',
     color: 'pink',
+  },
+  {
+    value: 'SERVICE_PROVIDER',
+    label: 'Service Provider',
+    icon: Wrench,
+    desc: 'Cook, driver, electrician, gym trainer, caretaker — anyone offering a service',
+    color: 'cyan',
   },
 ];
 
@@ -282,6 +289,83 @@ function RoleSpecificFields({
     </div>
   );
 
+  if (role === 'SERVICE_PROVIDER') return (
+    <div className="space-y-3">
+      <div>
+        <label className="block text-[10px] uppercase tracking-wider text-zinc-400 mb-1.5 font-medium">
+          What kind of work do you do? *
+        </label>
+        <select
+          value={(data['serviceType'] as string) || ''}
+          onChange={(e) => onChange('serviceType', e.target.value)}
+          className="w-full px-3 py-2.5 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-violet-500"
+        >
+          <option value="">-- Select your work --</option>
+          <option value="DRIVER">Driver</option>
+          <option value="COOK">Cook</option>
+          <option value="HOUSEHOLD">Household help / Maid</option>
+          <option value="SECURITY">Security guard</option>
+          <option value="LABOUR">Labour / Construction</option>
+          <option value="ELECTRICIAN">Electrician / Plumber</option>
+          <option value="GARDENER">Gardener</option>
+          <option value="BEAUTY">Beauty / Salon work</option>
+          <option value="RETAIL">Shop / Retail</option>
+          <option value="EDUCATION">Tutor / Teacher</option>
+          <option value="HEALTHCARE">Healthcare / Nursing</option>
+          <option value="OTHER">Other</option>
+        </select>
+      </div>
+
+      {/* Custom profession input - shown only when "Other" is selected */}
+      {data['serviceType'] === 'OTHER' && (
+        <div className="p-3 rounded-lg bg-violet-500/[0.04] border border-violet-500/20">
+          <label className="block text-[10px] uppercase tracking-wider text-violet-300 mb-1.5 font-medium flex items-center gap-1">
+            <Sparkles className="w-3 h-3" /> Type your profession *
+          </label>
+          <input
+            value={(data['customProfession'] as string) || ''}
+            onChange={(e) => onChange('customProfession', e.target.value)}
+            placeholder="Type your profession here"
+            className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-700 rounded-lg text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-violet-500"
+          />
+          <p className="text-[10px] text-zinc-400 mt-1.5">
+            Don't see your work listed above? Just type it here — people looking for it will find you.
+          </p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-3">
+        <RoleField label="Years of experience" name="yearsExperience" placeholder="e.g. 5" type="number" data={data} onChange={onChange} />
+        <RoleField label="Daily rate (₹) — optional" name="dailyRate" placeholder="e.g. 500" type="number" data={data} onChange={onChange} />
+        <RoleField label="Service area" name="serviceArea" placeholder="e.g. Sector 21, Noida" data={data} onChange={onChange} />
+        <RoleField label="Availability" name="availability" placeholder="e.g. Mon-Sat, 9am-6pm" data={data} onChange={onChange} />
+      </div>
+
+      <TagInput label="Languages you speak" name="languages" placeholder="e.g. Hindi, English, Bhojpuri" data={data} onChange={onChange} />
+      <TagInput label="Specialities / skills" name="skills" placeholder="e.g. North Indian cooking, Long-distance driving" data={data} onChange={onChange} />
+
+      <div>
+        <label className="block text-[10px] uppercase tracking-wider text-zinc-400 mb-1.5 font-medium">About your work</label>
+        <textarea
+          value={(data['about'] as string) || ''}
+          onChange={(e) => onChange('about', e.target.value)}
+          rows={3}
+          placeholder="Tell people what you do, your experience, and any specialities. This will be shown on your service profile."
+          className="w-full px-3 py-2.5 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-violet-500 resize-none"
+        />
+      </div>
+
+      <div className="p-3 rounded-lg bg-emerald-500/[0.04] border border-emerald-500/20">
+        <p className="text-[11px] text-emerald-300 flex items-start gap-1.5">
+          <Check className="w-3 h-3 mt-0.5 flex-shrink-0" />
+          <span>
+            <strong>Good news:</strong> After signing up, your details here will create a service profile automatically. Anyone searching for your work (driver, cook, etc.) in your area can find you, see your rates, and contact you.
+          </span>
+        </p>
+      </div>
+    </div>
+  );
+
   return null;
 }
 
@@ -343,8 +427,46 @@ export default function Onboarding() {
       });
     },
     onSuccess: async () => {
+      // If they signed up as a service provider, auto-create their service listing
+      // so they're discoverable immediately without a second form.
+      if (selectedRole === 'SERVICE_PROVIDER') {
+        const isOther = roleFields['serviceType'] === 'OTHER';
+        const customProfession = (roleFields['customProfession'] as string) || '';
+        const category = isOther ? 'OTHER' : ((roleFields['serviceType'] as string) || 'OTHER');
+        const profession = isOther ? customProfession : (roleFields['serviceType'] as string) || 'Service';
+
+        const langs = Array.isArray(roleFields['languages']) ? (roleFields['languages'] as string[]) : [];
+        const svcSkills = Array.isArray(roleFields['skills']) ? (roleFields['skills'] as string[]) : [];
+
+        const aboutText = (roleFields['about'] as string) || '';
+        const headlineText = customProfession || profession || 'Service Provider';
+        const fullDescription = aboutText.trim().length >= 10
+          ? aboutText.trim()
+          : `Experienced ${headlineText.toLowerCase()} available for hire. Contact for details.`;
+
+        try {
+          await api.post('/services/me', {
+            category,
+            customCategory: isOther && customProfession ? customProfession : undefined,
+            title: headlineText,
+            description: fullDescription,
+            rate: roleFields['dailyRate'] ? parseInt(roleFields['dailyRate'] as string) : undefined,
+            ratePeriod: roleFields['dailyRate'] ? 'per day' : undefined,
+            serviceArea: (roleFields['serviceArea'] as string) || undefined,
+            availability: (roleFields['availability'] as string) || undefined,
+            yearsExperience: roleFields['yearsExperience'] ? parseInt(roleFields['yearsExperience'] as string) : 0,
+            languages: langs,
+            skills: svcSkills,
+            isActive: true,
+          });
+        } catch {
+          // Non-blocking — onboarding still completes even if service-profile creation fails.
+          // User can fill it later from /dashboard/services/me.
+        }
+      }
+
       await hydrate();
-      navigate('/dashboard', { replace: true });
+      navigate(selectedRole === 'SERVICE_PROVIDER' ? '/dashboard/services/me' : '/dashboard', { replace: true });
     },
     onError: (err: any) => setError(err?.response?.data?.error?.message || 'Failed'),
   });
@@ -558,6 +680,7 @@ export default function Onboarding() {
                       selectedRole === 'STUDENT' ? 'Class 12 CBSE | JEE Aspirant' :
                       selectedRole === 'COLLEGE_STUDENT' ? 'B.Tech CSE @ IIT Delhi | ML Enthusiast' :
                       selectedRole === 'WORKING_PROFESSIONAL' ? 'Senior Developer @ TechCorp | 5 YOE' :
+                      selectedRole === 'SERVICE_PROVIDER' ? 'Experienced Cook · 8 years · Bihar' :
                       'Your professional headline'
                     }
                     maxLength={120}

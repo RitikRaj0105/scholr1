@@ -8,7 +8,7 @@ export interface User {
   firstName: string | null;
   lastName: string | null;
   avatarUrl: string | null;
-  role: 'STUDENT' | 'COLLEGE_STUDENT' | 'TEACHER' | 'PARENT' | 'SCHOOL_ADMIN' | 'COLLEGE_ADMIN' | 'RECRUITER' | 'WORKING_PROFESSIONAL' | 'SUPER_ADMIN';
+  role: 'STUDENT' | 'COLLEGE_STUDENT' | 'TEACHER' | 'PARENT' | 'SCHOOL_ADMIN' | 'COLLEGE_ADMIN' | 'RECRUITER' | 'WORKING_PROFESSIONAL' | 'SERVICE_PROVIDER' | 'SUPER_ADMIN';
   subscriptionTier: 'FREE' | 'PRO' | 'INSTITUTION' | 'ENTERPRISE';
   emailVerified: boolean;
   onboardingDone: boolean;

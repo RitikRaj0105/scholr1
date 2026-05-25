@@ -3,17 +3,21 @@ import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Brain, Target, BookOpen, Code2,
   Briefcase, Heart, Users, Settings, LogOut, CalendarDays, ShieldCheck,
-  GraduationCap, MessageSquare, Send, HardHat,
+  GraduationCap, MessageSquare, Send, HardHat, Wrench, Layers,
 } from 'lucide-react';
 import { useAuthStore, isAdmin, isTeacher } from '@/store/authStore';
 import { Avatar } from '@/components/social/Avatar';
 import { NotificationBell } from '@/components/social/NotificationBell';
+import { MessagesBell } from '@/components/social/MessagesBell';
+import { JobsBell } from '@/components/social/JobsBell';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Overview', end: true },
-  { to: '/dashboard/feed', icon: MessageSquare, label: 'Feed' },
+  { to: '/dashboard/feed', icon: Layers, label: 'Feed', highlight: true },
   { to: '/dashboard/messages', icon: Send, label: 'Messages' },
   { to: '/dashboard/jobs', icon: HardHat, label: 'Jobs' },
+  { to: '/dashboard/services', icon: Wrench, label: 'Services' },
   { to: '/dashboard/planner', icon: CalendarDays, label: 'Planner' },
   { to: '/dashboard/ai', icon: Brain, label: 'AI Mentor' },
   { to: '/dashboard/focus', icon: Target, label: 'Focus Mode' },
@@ -38,11 +42,11 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
     [user?.firstName?.[0], user?.lastName?.[0]].filter(Boolean).join('') || 'U';
 
   return (
-    <div className="min-h-screen bg-ink-950 text-bone-100 font-sans">
+    <div className="min-h-screen t-bg-base t-text-primary font-sans">
       <div className="flex">
         {/* Sidebar */}
-        <aside className="fixed inset-y-0 left-0 w-60 border-r border-white/[0.06] bg-ink-950 z-40 flex flex-col">
-          <div className="px-5 py-5 border-b border-white/[0.06]">
+        <aside className="fixed inset-y-0 left-0 w-60 border-r t-border t-bg-base z-40 flex flex-col">
+          <div className="px-5 py-5 border-b t-border">
             <Link to="/" className="inline-flex items-center gap-2.5 group">
               <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center">
                 <span className="text-white font-display text-sm">S</span>
@@ -63,15 +67,22 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
                   to={item.to}
                   end={item.end}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors ${
+                    `flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors relative ${
                       isActive
                         ? 'bg-violet-500/10 text-violet-400'
+                        : item.highlight
+                        ? 'text-violet-300 hover:bg-violet-500/[0.06]'
                         : 'text-bone-300 hover:text-bone-100 hover:bg-white/[0.03]'
                     }`
                   }
                 >
                   <item.icon className="w-[16px] h-[16px]" />
                   <span>{item.label}</span>
+                  {item.highlight && (
+                    <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/30">
+                      All
+                    </span>
+                  )}
                 </NavLink>
               </motion.div>
             ))}
@@ -81,7 +92,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.4, duration: 0.3 }}
-                className="pt-3 mt-3 border-t border-white/[0.06]"
+                className="pt-3 mt-3 border-t t-border"
               >
                 <NavLink
                   to="/admin"
@@ -98,7 +109,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.45, duration: 0.3 }}
-                className={!isAdmin(user) ? 'pt-3 mt-3 border-t border-white/[0.06]' : ''}
+                className={!isAdmin(user) ? 'pt-3 mt-3 border-t t-border' : ''}
               >
                 <NavLink
                   to="/teacher"
@@ -111,7 +122,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
             )}
           </nav>
 
-          <div className="px-3 py-3 border-t border-white/[0.06]">
+          <div className="px-3 py-3 border-t t-border">
             <NavLink
               to="/dashboard/settings"
               className="flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium text-bone-300 hover:text-bone-100 hover:bg-white/[0.03] transition-colors"
@@ -147,7 +158,10 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
         </aside>
 
         <main className="flex-1 ml-60 min-h-screen relative">
-          <div className="absolute top-5 right-5 z-30">
+          <div className="absolute top-5 right-5 z-30 flex items-center gap-2">
+            <ThemeToggle compact />
+            <JobsBell />
+            <MessagesBell />
             <NotificationBell />
           </div>
           {children}

@@ -54,6 +54,8 @@ const publicUser = (u: {
   avatarUrl: string | null;
   subscriptionTier: string;
   emailVerified: boolean;
+  onboardingDone: boolean;
+  headline: string | null;
 }) => ({
   id: u.id,
   email: u.email,
@@ -63,6 +65,8 @@ const publicUser = (u: {
   avatarUrl: u.avatarUrl,
   subscriptionTier: u.subscriptionTier,
   emailVerified: u.emailVerified,
+  onboardingDone: u.onboardingDone,
+  headline: u.headline,
 });
 
 // =====================================================================
@@ -185,6 +189,8 @@ export const me = async (req: Request, res: Response) => {
       avatarUrl: true,
       subscriptionTier: true,
       emailVerified: true,
+      onboardingDone: true,
+      headline: true,
       bio: true,
       createdAt: true,
     },

@@ -39,6 +39,8 @@ import TeacherDashboard from './pages/teacher/TeacherDashboard';
 import TeacherClassrooms from './pages/teacher/TeacherClassrooms';
 import TeacherNewClassroom from './pages/teacher/TeacherNewClassroom';
 import TeacherClassroomDetail from './pages/teacher/TeacherClassroomDetail';
+import ClassroomHub from './pages/dashboard/classroom/ClassroomHub';
+import ClassroomDetail from './pages/dashboard/classroom/ClassroomDetail';
 import { TeacherRoute } from './components/auth/TeacherRoute';
 import NotFound from './pages/NotFound';
 
@@ -186,6 +188,10 @@ function App() {
       {/* Messages */}
       <Route path="/dashboard/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
       <Route path="/dashboard/messages/:userId" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+
+      {/* Classroom (student-facing, but teachers can use it too) */}
+      <Route path="/dashboard/classroom" element={<ProtectedRoute><ClassroomHub /></ProtectedRoute>} />
+      <Route path="/dashboard/classroom/:id" element={<ProtectedRoute><ClassroomDetail /></ProtectedRoute>} />
 
       {/* Jobs */}
       <Route path="/dashboard/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />

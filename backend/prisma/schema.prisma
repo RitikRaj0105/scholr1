@@ -23,6 +23,7 @@ enum Role {
   COLLEGE_ADMIN
   RECRUITER
   WORKING_PROFESSIONAL   // Industry professional
+  SERVICE_PROVIDER       // Cook, driver, electrician, gym trainer, caretaker, etc.
   SUPER_ADMIN
 }
 
@@ -206,6 +207,10 @@ model User {
   aiChats           AIChat[]
   enrollments       Enrollment[]
   taughtClassrooms  Classroom[]    @relation("ClassroomTeacher")
+  announcements     ClassroomAnnouncement[] @relation("AnnouncementAuthor")
+  materials         ClassroomMaterial[]     @relation("MaterialAuthor")
+  attendanceSessions AttendanceSession[]    @relation("AttendanceTeacher")
+  attendanceRecords  AttendanceRecord[]
   submissions       Submission[]
   examAttempts      ExamAttempt[]
   notifications     Notification[]    @relation("UserNotifications")
@@ -236,6 +241,8 @@ model User {
   reportsReviewed   Report[]        @relation("ReportReviewer")
   education         Education[]
   workExperiences   WorkExperience[]
+  serviceProfile    ServiceProfile?
+  serviceReviewsGiven ServiceReview[]  @relation("ServiceReviewer")
 
   @@index([role])
   @@index([institutionId])
@@ -414,6 +421,11 @@ model Classroom {
   code          String       @unique // join code
   description   String?
   subject       String?
+  bannerColor   String?
+  meetingLink   String?
+  grade         String?
+  schedule      String?
+  archived      Boolean      @default(false)
   teacherId     String
   teacher       User         @relation("ClassroomTeacher", fields: [teacherId], references: [id])
   institutionId String?
@@ -421,6 +433,9 @@ model Classroom {
   enrollments   Enrollment[]
   assignments   Assignment[]
   exams         Exam[]
+  announcements ClassroomAnnouncement[]
+  materials     ClassroomMaterial[]
+  attendance    AttendanceSession[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -933,4 +948,143 @@ model WorkExperience {
   createdAt   DateTime  @default(now())
 
   @@index([userId])
+}
+
+// ============================================
+// SERVICE MARKETPLACE
+// For people offering services — cooks, drivers, electricians, gym trainers,
+// caretakers, tutors, etc. Discoverable by anyone who needs them.
+// ============================================
+
+model ServiceProfile {
+  id            String      @id @default(cuid())
+  userId        String      @unique  // One service profile per user
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // What they offer
+  category      JobCategory @default(OTHER)
+  customCategory String?    // When category=OTHER, free-text profession like "Gym Trainer"
+  title         String      // "Experienced North Indian Cook", "Personal Driver"
+  description   String      @db.Text
+  // Pricing
+  rate          Int?        // Numeric rate, e.g. 500
+  ratePeriod    String?     // "per day" | "per hour" | "per month" | "per visit" | "negotiable"
+  currency      String      @default("INR")
+  // Service area + availability
+  serviceArea   String?     // "Sector 21 Noida, NCR"
+  availability  String?     // "Mon-Fri, 9am-6pm" or "On call 24x7"
+  // Experience and signals
+  yearsExperience Int       @default(0)
+  languages     String[]    @default([])    // ["Hindi", "English", "Bhojpuri"]
+  skills        String[]    @default([])    // ["South Indian", "Continental", "Baking"]
+  // Visibility
+  isActive      Boolean     @default(true)
+  // Stats (denormalized)
+  avgRating     Float       @default(0)     // 0–5
+  ratingCount   Int         @default(0)
+  bookingCount  Int         @default(0)     // Times marked as hired/contacted
+  // Verification (admin can flag trusted providers)
+  isVerified    Boolean     @default(false)
+  reviews       ServiceReview[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([category, isActive])
+  @@index([serviceArea])
+  @@index([avgRating])
+}
+
+model ServiceReview {
+  id          String         @id @default(cuid())
+  profileId   String
+  profile     ServiceProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  reviewerId  String
+  reviewer    User           @relation("ServiceReviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+  rating      Int            // 1-5
+  comment     String?        @db.Text
+  // Was this person actually hired? Helps build trust
+  hired       Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+
+  @@unique([profileId, reviewerId])  // One review per user per profile
+  @@index([profileId])
+}
+
+// ============================================
+// CLASSROOM EXTENSIONS
+// ============================================
+
+model ClassroomAnnouncement {
+  id          String    @id @default(cuid())
+  classroomId String
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User      @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  title       String
+  content     String    @db.Text
+  pinned      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([classroomId, createdAt])
+}
+
+model ClassroomMaterial {
+  id          String    @id @default(cuid())
+  classroomId String
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User      @relation("MaterialAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  fileUrl     String?
+  linkUrl     String?
+  type        MaterialType @default(LINK)
+  createdAt   DateTime  @default(now())
+
+  @@index([classroomId, createdAt])
+}
+
+enum MaterialType {
+  PDF
+  VIDEO
+  LINK
+  IMAGE
+  DOC
+  OTHER
+}
+
+model AttendanceSession {
+  id           String    @id @default(cuid())
+  classroomId  String
+  classroom    Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  teacherId    String
+  teacher      User      @relation("AttendanceTeacher", fields: [teacherId], references: [id])
+  date         DateTime  @db.Date
+  topic        String?
+  records      AttendanceRecord[]
+  createdAt    DateTime  @default(now())
+
+  @@unique([classroomId, date])
+  @@index([classroomId])
+}
+
+model AttendanceRecord {
+  id        String            @id @default(cuid())
+  sessionId String
+  session   AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    AttendanceStatus  @default(ABSENT)
+  note      String?
+  markedAt  DateTime          @default(now())
+
+  @@unique([sessionId, userId])
+  @@index([userId])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
 }

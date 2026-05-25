@@ -5,10 +5,11 @@ import { motion } from 'framer-motion';
 import {
   Search, Plus, MapPin, Briefcase, IndianRupee, Clock,
   HardHat, ChefHat, Car, Home, Shield, Wrench, Sprout, Scissors, Store,
-  GraduationCap, Heart, Code2, Building2, Loader2,
+  GraduationCap, Heart, Code2, Building2, Loader2, Sparkles,
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Avatar } from '@/components/social/Avatar';
+import { QuickPostJob } from '@/components/dashboard/QuickPostJob';
 import { api } from '@/lib/api';
 
 const CATEGORIES = [
@@ -76,6 +77,15 @@ export default function Jobs() {
     },
   });
 
+  // Personalized suggestions — only shown when no filter is active
+  const showSuggestions = !category && !search;
+  const { data: suggested } = useQuery<{ jobs: JobItem[]; suggestionBasis?: string }>({
+    queryKey: ['jobs-suggested', showSuggestions],
+    queryFn: async () => (await api.get('/jobs/suggested?limit=6')).data,
+    enabled: showSuggestions,
+    staleTime: 60_000,
+  });
+
   return (
     <DashboardLayout>
       <div className="space-y-4">
@@ -139,6 +149,47 @@ export default function Jobs() {
               </button>
             );
           })}
+        </div>
+
+        {/* Suggested for you - only shown when no filter */}
+        {showSuggestions && suggested?.jobs && suggested.jobs.length > 0 && (
+          <div className="rounded-2xl border border-violet-500/20 bg-gradient-to-br from-violet-500/[0.04] to-zinc-900 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-violet-400" />
+                <h3 className="text-sm font-semibold text-white">
+                  {suggested.suggestionBasis === 'profile' ? 'Suggested for you' : 'Recent jobs'}
+                </h3>
+                {suggested.suggestionBasis === 'profile' && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/10 text-violet-300 border border-violet-500/20">
+                    Based on your skills
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-2">
+              {suggested.jobs.slice(0, 4).map((j, i) => (
+                <JobCard key={j.id} job={j} index={i} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Quick post composer - "Didn't find what you need?" */}
+        <QuickPostJob />
+
+        {/* Jobs list header */}
+        <div className="flex items-center justify-between pt-2">
+          <h2 className="text-sm font-semibold text-white">
+            {category
+              ? `${CATEGORIES.find((c) => c.value === category)?.label || 'Jobs'}`
+              : search
+              ? 'Search results'
+              : 'All jobs'}
+          </h2>
+          {jobs.length > 0 && (
+            <span className="text-xs text-zinc-500">{jobs.length} job{jobs.length !== 1 ? 's' : ''}</span>
+          )}
         </div>
 
         {/* Jobs list */}

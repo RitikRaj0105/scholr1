@@ -234,3 +234,187 @@ export async function jobApplications(req: Request, res: Response) {
 
   res.json({ job: { id: job.id, title: job.title }, applications });
 }
+
+// ─── Suggested jobs based on user profile ─────────────
+//
+// Matching heuristic, layered from strongest to weakest signal:
+//   1. Direct skill match → score by # skills matched
+//   2. Category match (inferred from role + profileData)
+//   3. Location match (city or state)
+//   4. Recently posted (fallback so result list is never empty)
+//
+// Returns jobs sorted by relevance score (desc), tie-break by recency.
+export async function suggestedJobs(req: Request, res: Response) {
+  const me = req.user!;
+  const limit = Math.min(parseInt(req.query.limit as string) || 20, 50);
+
+  // Pull the user's matching signals
+  const user = await prisma.user.findUnique({
+    where: { id: me.id },
+    select: {
+      id: true, role: true, skills: true, city: true, state: true, profileData: true,
+    },
+  });
+  if (!user) return res.json({ jobs: [] });
+
+  const profileData = (user.profileData as any) || {};
+  const skills = (user.skills || []).map((s) => s.toLowerCase());
+
+  // Infer preferred categories from role + profileData
+  const preferredCategories = inferCategories(user.role, profileData, skills);
+
+  // Pull a wide-ish candidate pool (active jobs only), then score in JS
+  const candidates = await prisma.job.findMany({
+    where: {
+      isActive: true,
+      recruiterId: { not: me.id },     // don't suggest jobs you posted yourself
+    },
+    orderBy: { postedAt: 'desc' },
+    take: 200,
+    include: {
+      recruiter: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+      _count: { select: { applications: true } },
+    },
+  });
+
+  // Filter out jobs the user already applied to
+  const myApplications = await prisma.application.findMany({
+    where: { userId: me.id },
+    select: { jobId: true },
+  });
+  const appliedIds = new Set(myApplications.map((a) => a.jobId));
+
+  // Score each candidate
+  const scored = candidates
+    .filter((j) => !appliedIds.has(j.id))
+    .map((j) => {
+      let score = 0;
+      const jobSkills = (j.skills || []).map((s) => s.toLowerCase());
+      const text = `${j.title} ${j.description} ${j.company}`.toLowerCase();
+
+      // Skill matches — both direct array intersection and keyword presence
+      for (const s of skills) {
+        if (jobSkills.includes(s)) score += 5;
+        else if (text.includes(s)) score += 2;
+      }
+
+      // Category match
+      if (preferredCategories.includes(j.category)) score += 4;
+
+      // Location match
+      if (user.city && j.location?.toLowerCase().includes(user.city.toLowerCase())) score += 3;
+      else if (user.state && j.location?.toLowerCase().includes(user.state.toLowerCase())) score += 1;
+
+      // Recency bonus — last 7 days
+      const ageDays = (Date.now() - j.postedAt.getTime()) / (24 * 3600 * 1000);
+      if (ageDays < 7) score += 1;
+
+      return { job: j, score };
+    });
+
+  // Sort and slice
+  scored.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return b.job.postedAt.getTime() - a.job.postedAt.getTime();
+  });
+
+  // If literally nothing matched (e.g. brand-new account with no skills), fall back to recent jobs
+  const top = scored.slice(0, limit);
+  if (top.every((s) => s.score === 0) && candidates.length > 0) {
+    return res.json({
+      jobs: candidates.slice(0, limit),
+      suggestionBasis: 'recent',
+    });
+  }
+
+  res.json({
+    jobs: top.map((s) => s.job),
+    suggestionBasis: 'profile',
+    preferredCategories,
+  });
+}
+
+// Map a user's role + profile data into job categories they'd plausibly want.
+function inferCategories(role: string, profileData: any, skills: string[]): string[] {
+  const cats = new Set<string>();
+  const s = skills.join(' ').toLowerCase();
+  const dataStr = JSON.stringify(profileData || {}).toLowerCase();
+  const combined = `${s} ${dataStr}`;
+
+  // Role-based hints
+  if (role === 'COLLEGE_STUDENT' || role === 'STUDENT') {
+    // Heavy weight on what they're studying
+    if (/comput|software|cs |it |coding|programming/.test(combined)) {
+      cats.add('TECH').add('PROFESSIONAL');
+    }
+    if (/medic|nurs|pharm|health/.test(combined)) cats.add('HEALTHCARE');
+    if (/teach|educat|tutor/.test(combined)) cats.add('EDUCATION');
+    if (/cook|chef|culinary|kitchen/.test(combined)) cats.add('COOK');
+    if (/driver|driving/.test(combined)) cats.add('DRIVER');
+    if (/electric|plumb|carpent|mechan/.test(combined)) cats.add('ELECTRICIAN');
+    if (/construc|labour|labor|mason|painter/.test(combined)) cats.add('LABOUR');
+    if (/secur|guard|watchman/.test(combined)) cats.add('SECURITY');
+    if (/beaut|salon|stylist|makeup/.test(combined)) cats.add('BEAUTY');
+    if (/garden|landscap|farm/.test(combined)) cats.add('GARDENER');
+    if (/retail|shop|sales|cashier/.test(combined)) cats.add('RETAIL');
+  }
+  if (role === 'WORKING_PROFESSIONAL' || role === 'RECRUITER') {
+    if (/develop|engineer|softw|code|python|java|react|node|aws|cloud|data|ml|ai/.test(combined)) {
+      cats.add('TECH');
+    }
+    if (/manage|finance|account|business|consult|hr|marketing/.test(combined)) {
+      cats.add('PROFESSIONAL');
+    }
+  }
+  if (role === 'TEACHER') cats.add('EDUCATION');
+
+  // Skill-based hints (always run, regardless of role)
+  if (/python|javascript|java|c\+\+|react|sql|tensorflow|docker|aws|kubernetes/.test(s)) {
+    cats.add('TECH');
+  }
+  if (/excel|sap|tally|powerbi|sales/.test(s)) cats.add('PROFESSIONAL');
+  if (/cook|baker|chef/.test(s)) cats.add('COOK');
+  if (/drive|driving/.test(s)) cats.add('DRIVER');
+  if (/electric|plumb|carpent/.test(s)) cats.add('ELECTRICIAN');
+
+  // Always include "PROFESSIONAL" + "TECH" as broad fallbacks for college students
+  if (role === 'COLLEGE_STUDENT' && cats.size === 0) {
+    cats.add('TECH').add('PROFESSIONAL').add('EDUCATION');
+  }
+
+  return Array.from(cats);
+}
+
+// ─── Quick post from feed / inline composer (lightweight) ────
+const quickPostSchema = z.object({
+  title: z.string().min(2).max(120),
+  category: z.enum(JOB_CATEGORIES).default('OTHER'),
+  type: z.enum(JOB_TYPES).default('GIG'),
+  location: z.string().max(120).optional(),
+  description: z.string().min(5).max(2000),
+  dailyWage: z.number().int().nonnegative().optional(),
+  contactPhone: z.string().max(20).optional(),
+});
+
+export async function quickPostJob(req: Request, res: Response) {
+  const me = req.user!.id;
+  const data = quickPostSchema.parse(req.body);
+
+  // Use the user's display name as the "company" for quick posts
+  const user = await prisma.user.findUnique({
+    where: { id: me },
+    select: { firstName: true, lastName: true },
+  });
+  const posterName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Listing';
+
+  const job = await prisma.job.create({
+    data: {
+      ...data,
+      company: posterName,
+      payPeriod: data.dailyWage ? 'per day' : null,
+      recruiterId: me,
+    },
+  });
+
+  res.status(201).json({ job });
+}
