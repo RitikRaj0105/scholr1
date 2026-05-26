@@ -1,0 +1,78 @@
+/* =============================================================
+   theme.css — GLOBAL light/dark theme rules
+   
+   Light mode: BLACK fonts everywhere (#0f172a)
+   Dark mode:  WHITE fonts everywhere (#fafaf8)
+   
+   This file should be imported ONCE in main.tsx after index.css
+   so it applies app-wide.
+   ============================================================= */
+
+/* Default = light mode (black fonts on white) */
+:root {
+  color-scheme: light;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --bg-base: #f8fafc;
+  --bg-card: #ffffff;
+  --border-default: #e2e8f0;
+}
+
+/* Auto-detect dark mode if user has system preference */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    color-scheme: dark;
+    --text-primary: #fafaf8;
+    --text-secondary: #c8c8b8;
+    --text-muted: #a8a898;
+    --bg-base: #0a0a0f;
+    --bg-card: #111118;
+    --border-default: rgba(255, 255, 255, 0.08);
+  }
+}
+
+/* Manual override — when user explicitly toggles */
+html.dark {
+  color-scheme: dark;
+  --text-primary: #fafaf8;
+  --text-secondary: #c8c8b8;
+  --text-muted: #a8a898;
+  --bg-base: #0a0a0f;
+  --bg-card: #111118;
+  --border-default: rgba(255, 255, 255, 0.08);
+}
+
+html.light {
+  color-scheme: light;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --bg-base: #f8fafc;
+  --bg-card: #ffffff;
+  --border-default: #e2e8f0;
+}
+
+/* Apply theme to body */
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  transition: background-color 0.2s, color 0.2s;
+}
+
+/* Force text colors in light mode (override any dark-themed components) */
+html.light body,
+html.light .force-theme-text {
+  color: #0f172a !important;
+}
+
+/* Force text colors in dark mode */
+html.dark body,
+html.dark .force-theme-text {
+  color: #fafaf8 !important;
+}
+
+/* Smooth transitions for theme switching */
+html * {
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}

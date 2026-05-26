@@ -1,0 +1,154 @@
+// =============================================================
+// App.tsx — what to change
+// =============================================================
+//
+// 1. Add this import at the top:
+//
+//    import ProfileSetup from './pages/auth/ProfileSetup.jsx';
+//    import ThemeToggle from './components/ThemeToggle.jsx';
+//
+// 2. Add this route inside your <Routes>:
+//
+//    <Route path="/profile-setup" element={
+//      <ProtectedRoute>
+//        <ProfileSetup />
+//      </ProtectedRoute>
+//    } />
+//
+// 3. Add <ThemeToggle /> just inside your top-level layout 
+//    (above <Routes> or inside each layout):
+//
+//    <BrowserRouter>
+//      <ThemeToggle />
+//      <Routes>...</Routes>
+//    </BrowserRouter>
+//
+// Full example below ↓
+
+
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './lib/queryClient';
+import { useAuthStore } from './store/authStore';
+
+// Auth pages
+import Login from './pages/auth/Login.jsx';
+import Signup from './pages/auth/Signup.jsx';
+import ProfileSetup from './pages/auth/ProfileSetup.jsx';
+
+// Global theme toggle
+import ThemeToggle from './components/ThemeToggle.jsx';
+
+// Dashboards (your existing imports)
+import Dashboard from './pages/dashboard/Dashboard';
+import Feed from './pages/dashboard/Feed';
+import TeacherDashboard from './pages/teacher/TeacherDashboard';
+import AdminDashboard from './pages/admin/AdminDashboard';
+// import RecruiterDashboard from './pages/recruiter/RecruiterDashboard'; // build this when ready
+
+// Guards
+import AdminRoute from './components/auth/AdminRoute';
+import TeacherRoute from './components/auth/TeacherRoute';
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, accessToken } = useAuthStore();
+  if (!user || !accessToken) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
+
+// Redirects to profile setup if onboarding isn't done
+function OnboardingGate({ children }: { children: React.ReactNode }) {
+  const { user } = useAuthStore();
+  if (user && !user.onboardingDone) return <Navigate to="/profile-setup" replace />;
+  return <>{children}</>;
+}
+
+export default function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        {/* Floating theme switcher — visible on every page */}
+        <ThemeToggle />
+
+        <Routes>
+          {/* Public */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+
+          {/* Profile setup (after signup or if onboarding incomplete) */}
+          <Route
+            path="/profile-setup"
+            element={
+              <ProtectedRoute>
+                <ProfileSetup />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Student / College / Parent default dashboard */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <OnboardingGate>
+                  <Dashboard />
+                </OnboardingGate>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Feed for Working Professionals / Recruiters */}
+          <Route
+            path="/dashboard/feed"
+            element={
+              <ProtectedRoute>
+                <OnboardingGate>
+                  <Feed />
+                </OnboardingGate>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Teacher dashboard */}
+          <Route
+            path="/teacher/*"
+            element={
+              <ProtectedRoute>
+                <OnboardingGate>
+                  <TeacherRoute>
+                    <TeacherDashboard />
+                  </TeacherRoute>
+                </OnboardingGate>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin dashboard */}
+          <Route
+            path="/admin/*"
+            element={
+              <ProtectedRoute>
+                <OnboardingGate>
+                  <AdminRoute>
+                    <AdminDashboard />
+                  </AdminRoute>
+                </OnboardingGate>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Recruiter dashboard — TODO: build this when ready */}
+          {/* <Route path="/recruiter/*" element={
+              <ProtectedRoute><OnboardingGate>
+                <RecruiterDashboard />
+              </OnboardingGate></ProtectedRoute>
+          } /> */}
+
+          {/* Default */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
+}

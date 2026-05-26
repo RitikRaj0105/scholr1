@@ -19,7 +19,7 @@ import Planner from './pages/dashboard/Planner';
 import Career from './pages/dashboard/Career';
 import CareerDetail from './pages/dashboard/CareerDetail';
 import Feed from './pages/dashboard/Feed';
-import Profile from './pages/dashboard/Profile';
+import ProfileSetup from './pages/auth/ProfileSetup';
 import ProfessionalProfile from './pages/dashboard/ProfessionalProfile';
 import Notifications from './pages/dashboard/Notifications';
 import Messages from './pages/dashboard/Messages';
@@ -122,6 +122,14 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+       path="/profile-setup"
+        element={
+          <ProtectedRoute>
+            <ProfileSetup />
+           </ProtectedRoute>
+          }
+         />
       <Route
         path="/dashboard/code/:slug"
         element={

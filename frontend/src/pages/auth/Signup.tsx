@@ -11,7 +11,6 @@ export default function Signup() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'STUDENT' | 'TEACHER'>('STUDENT');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,8 +19,9 @@ export default function Signup() {
     setError(null);
     setLoading(true);
     try {
-      await signup({ email, password, firstName, lastName, role });
-      navigate('/dashboard');
+      await signup({ email, password, firstName, lastName });
+      // Send to profile setup where they pick role + fill details
+      navigate('/profile-setup', { replace: true });
     } catch (err: any) {
       setError(
         err?.response?.data?.error || 'Could not create account. Try again.'
@@ -88,28 +88,6 @@ export default function Signup() {
           minLength={8}
           autoComplete="new-password"
         />
-
-        <div className="mb-6">
-          <span className="block text-xs uppercase tracking-wider text-bone-400 mb-2">
-            I am a
-          </span>
-          <div className="grid grid-cols-2 gap-2">
-            {(['STUDENT', 'TEACHER'] as const).map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setRole(r)}
-                className={`py-3 rounded-xl border text-sm transition-all ${
-                  role === r
-                    ? 'border-violet-500/60 bg-violet-500/10 text-bone-50'
-                    : 'border-white/10 text-bone-300 hover:border-white/20'
-                }`}
-              >
-                {r === 'STUDENT' ? 'Student' : 'Teacher'}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {error && (
           <div className="mb-4 px-4 py-3 rounded-xl bg-magenta-500/10 border border-magenta-500/30 text-magenta-200 text-sm">

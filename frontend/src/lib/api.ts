@@ -1,26 +1,26 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
-
+ 
 const baseURL = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api';
-
+ 
 export const api = axios.create({
   baseURL,
   withCredentials: true, // send refresh-token cookie
 });
-
+ 
 let accessToken: string | null = null;
-
+ 
 export const setAccessToken = (token: string | null) => {
   accessToken = token;
   if (token) localStorage.setItem('scholr_access', token);
   else localStorage.removeItem('scholr_access');
 };
-
+ 
 export const getAccessToken = () => {
   if (accessToken) return accessToken;
   accessToken = localStorage.getItem('scholr_access');
   return accessToken;
 };
-
+ 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const tok = getAccessToken();
   if (tok) {
@@ -29,10 +29,10 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   }
   return config;
 });
-
+ 
 // Refresh-on-401 with single-flight protection
 let refreshing: Promise<string | null> | null = null;
-
+ 
 const refreshOnce = async (): Promise<string | null> => {
   try {
     const res = await axios.post(`${baseURL}/auth/refresh`, null, { withCredentials: true });
@@ -47,7 +47,7 @@ const refreshOnce = async (): Promise<string | null> => {
     return null;
   }
 };
-
+ 
 api.interceptors.response.use(
   (r) => r,
   async (error: AxiosError) => {
@@ -71,3 +71,6 @@ api.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+ 
+export default api;
+ 
