@@ -19,6 +19,7 @@ import Planner from './pages/dashboard/Planner';
 import Career from './pages/dashboard/Career';
 import CareerDetail from './pages/dashboard/CareerDetail';
 import Feed from './pages/dashboard/Feed';
+import Wellness from './pages/dashboard/Wellness';
 import ProfileSetup from './pages/auth/ProfileSetup';
 import ProfessionalProfile from './pages/dashboard/ProfessionalProfile';
 import Notifications from './pages/dashboard/Notifications';
@@ -43,7 +44,12 @@ import ClassroomHub from './pages/dashboard/classroom/ClassroomHub';
 import ClassroomDetail from './pages/dashboard/classroom/ClassroomDetail';
 import { TeacherRoute } from './components/auth/TeacherRoute';
 import NotFound from './pages/NotFound';
-
+import Services from './pages/services/Services';
+import BecomeProvider from './pages/services/BecomeProvider';
+import ProviderDetail from './pages/services/ProviderDetail';
+import BookService from './pages/services/BookService';
+import MyBookings from './pages/services/MyBookings';
+import ServiceChat from './pages/services/ServiceChat';
 function App() {
   const hydrate = useAuthStore((s) => s.hydrate);
 
@@ -163,6 +169,14 @@ function App() {
         }
       />
       <Route
+        path="/dashboard/wellness"
+        element={
+          <ProtectedRoute>
+            <Wellness />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/dashboard/feed"
         element={
           <ProtectedRoute>
@@ -192,7 +206,54 @@ function App() {
           </ProtectedRoute>
         }
       />
-
+       <Route
+  path="/dashboard/services"
+  element={
+    <ProtectedRoute>
+      <Services />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/dashboard/services/become-provider"
+  element={
+    <ProtectedRoute>
+      <BecomeProvider />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/dashboard/services/provider/:providerId"
+  element={
+    <ProtectedRoute>
+      <ProviderDetail />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/dashboard/services/book/:providerId"
+  element={
+    <ProtectedRoute>
+      <BookService />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/dashboard/services/my-bookings"
+  element={
+    <ProtectedRoute>
+      <MyBookings />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/dashboard/services/chat/:bookingId"
+  element={
+    <ProtectedRoute>
+      <ServiceChat />
+    </ProtectedRoute>
+  }
+/>
       {/* Messages */}
       <Route path="/dashboard/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
       <Route path="/dashboard/messages/:userId" element={<ProtectedRoute><Messages /></ProtectedRoute>} />

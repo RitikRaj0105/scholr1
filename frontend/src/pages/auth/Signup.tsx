@@ -23,9 +23,9 @@ export default function Signup() {
       // Send to profile setup where they pick role + fill details
       navigate('/profile-setup', { replace: true });
     } catch (err: any) {
-      setError(
-        err?.response?.data?.error || 'Could not create account. Try again.'
-      );
+      const errData = err?.response?.data?.error;
+      const message = typeof errData === 'string' ? errData : errData?.message || 'Could not create account. Try again.';
+      setError(message);
     } finally {
       setLoading(false);
     }

@@ -1,0 +1,131 @@
+/* ServiceChat.css */
+.sc-wrapper {
+  height: 100vh;
+  background: var(--svc-bg, #f8fafc);
+  color: var(--svc-text, #0f172a);
+  display: flex;
+  flex-direction: column;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.sc-loading {
+  text-align: center;
+  padding: 3rem;
+  color: var(--svc-text-muted, #64748b);
+}
+
+.sc-header {
+  background: var(--svc-card, #ffffff);
+  border-bottom: 1px solid var(--svc-border, #e2e8f0);
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sc-back {
+  background: transparent;
+  border: none;
+  color: var(--svc-primary, #6366f1);
+  font-size: 0.95rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.sc-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.sc-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sc-empty {
+  text-align: center;
+  color: var(--svc-text-muted, #64748b);
+  padding: 2rem;
+  font-size: 0.9rem;
+}
+
+.sc-bubble {
+  max-width: 70%;
+  padding: 0.65rem 0.9rem;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.sc-bubble-mine {
+  background: var(--svc-primary, #6366f1);
+  color: white;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+.sc-bubble-theirs {
+  background: var(--svc-card, #ffffff);
+  border: 1px solid var(--svc-border, #e2e8f0);
+  color: var(--svc-text, #0f172a);
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+
+.sc-bubble-time {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  margin-top: 0.25rem;
+  text-align: right;
+}
+
+.sc-input-row {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  background: var(--svc-card, #ffffff);
+  border-top: 1px solid var(--svc-border, #e2e8f0);
+}
+
+.sc-input {
+  flex: 1;
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--svc-input-border, #d1d5db);
+  background: var(--svc-input-bg, #ffffff);
+  color: var(--svc-text, #0f172a);
+  font-size: 0.95rem;
+  font-family: inherit;
+  outline: none;
+}
+
+.sc-input:focus {
+  border-color: var(--svc-primary, #6366f1);
+}
+
+.sc-send {
+  padding: 0.7rem 1.5rem;
+  border-radius: 999px;
+  border: none;
+  background: var(--svc-primary, #6366f1);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.sc-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .sc-header, .sc-messages, .sc-input-row { padding-left: 1rem; padding-right: 1rem; }
+  .sc-bubble { max-width: 85%; }
+}

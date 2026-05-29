@@ -42,18 +42,17 @@ const publicUserSelect = {
 // contact fields that the owner has chosen to keep private.
 function applyPrivacy<T extends Record<string, any>>(user: T, isOwner: boolean): T {
   if (isOwner) return user;
-  const filtered = { ...user };
-  if (!user.showPhone) filtered.phone = null;
-  if (!user.showEmail) filtered.email = null;
-  if (!user.showDob) filtered.dob = null;
-  if (!user.showLocation) {
+  const filtered: any = { ...user };
+  if (!filtered.showPhone) filtered.phone = null;
+  if (!filtered.showEmail) filtered.email = null;
+  if (!filtered.showDob) filtered.dob = null;
+  if (!filtered.showLocation) {
     filtered.country = null;
     filtered.state = null;
     filtered.city = null;
   }
-  return filtered;
+  return filtered as T;
 }
-
 // ─── Profile strength calculator ─────────────
 
 export function calcProfileStrength(user: Record<string, unknown>): {
@@ -115,14 +114,15 @@ export const getProfile = async (req: Request, res: Response) => {
           id: true,
           category: true,
           customCategory: true,
-          title: true,
-          rate: true,
-          ratePeriod: true,
+          displayName: true,
+          hourlyRate: true,
+          fixedPrice: true,
+          priceUnit: true,
           avgRating: true,
-          ratingCount: true,
+          totalReviews: true,
           isActive: true,
           isVerified: true,
-        },
+        }
       },
       _count: {
         select: {
@@ -551,10 +551,13 @@ const step2Schema = z.object({
 const step3Schema = z.object({
   profileData: z.record(z.unknown()),
   skills: z.array(z.string()).optional(),
-  headline: z.string().max(120).optional(),
-  githubUrl: z.string().url().optional().nullable(),
-  linkedinUrl: z.string().url().optional().nullable(),
-});
+  headline: z.string().max(120).optional().nullable(),
+  bio: z.string().max(2000).optional().nullable(),
+  githubUrl: z.string().url().optional().or(z.literal('')).nullable(),
+  linkedinUrl: z.string().url().optional().or(z.literal('')).nullable(),
+  portfolioUrl: z.string().url().optional().or(z.literal('')).nullable(),
+  websiteUrl: z.string().url().optional().or(z.literal('')).nullable(),
+}).passthrough();
 
 export const onboardStep1 = async (req: Request, res: Response) => {
   const userId = req.user!.id;
@@ -580,20 +583,23 @@ export const onboardStep2 = async (req: Request, res: Response) => {
 
 export const onboardStep3 = async (req: Request, res: Response) => {
   const userId = req.user!.id;
-  const { profileData, skills, headline, githubUrl, linkedinUrl } = step3Schema.parse(req.body);
+  const parsed = step3Schema.parse(req.body);
 
-  const user = await prisma.user.update({
-    where: { id: userId },
-    data: {
-      profileData: profileData as any,
-      skills: skills || [],
-      headline: headline || undefined,
-      githubUrl: githubUrl || undefined,
-      linkedinUrl: linkedinUrl || undefined,
-      onboardingDone: true,
-    },
-    select: publicUserSelect,
-  });
+const user = await prisma.user.update({
+  where: { id: userId },
+  data: {
+    profileData: parsed.profileData as any,
+    skills: parsed.skills || [],
+    headline: parsed.headline || undefined,
+    bio: parsed.bio || undefined,
+    githubUrl: parsed.githubUrl || undefined,
+    linkedinUrl: parsed.linkedinUrl || undefined,
+    portfolioUrl: parsed.portfolioUrl || undefined,
+    websiteUrl: parsed.websiteUrl || undefined,
+    onboardingDone: true,
+  },
+  select: publicUserSelect,
+});
 
   res.json({ ok: true, user });
 };

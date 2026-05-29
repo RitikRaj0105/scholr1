@@ -221,6 +221,11 @@ model User {
   postedJobs        Job[]          @relation("JobPoster")
   careerProfile     CareerProfile?
   moodLogs          MoodLog[]
+  journalEntries    JournalEntry[]
+  parentRelations   ParentStudent[] @relation("StudentRelation")
+  studentRelations  ParentStudent[] @relation("ParentRelation")
+  wellnessThreads   WellnessThread[] @relation("UserWellnessThreads")
+  wellnessComments  WellnessComment[] @relation("UserWellnessComments")
   leaderboardEntries LeaderboardEntry[]
   streak            Streak?
   codeSubmissions   CodeSubmission[]
@@ -241,8 +246,12 @@ model User {
   reportsReviewed   Report[]        @relation("ReportReviewer")
   education         Education[]
   workExperiences   WorkExperience[]
-  serviceProfile    ServiceProfile?
-  serviceReviewsGiven ServiceReview[]  @relation("ServiceReviewer")
+  serviceProfile     ServiceProfile?         @relation("UserServiceProfile")
+  serviceBookings    ServiceBooking[]        @relation("CustomerBookings")
+  serviceReviews     ServiceReview[]         @relation("CustomerReviews")
+  serviceFavorites   ServiceFavorite[]
+  serviceReports     ServiceProviderReport[]
+
 
   @@index([role])
   @@index([institutionId])
@@ -955,60 +964,6 @@ model WorkExperience {
 // For people offering services — cooks, drivers, electricians, gym trainers,
 // caretakers, tutors, etc. Discoverable by anyone who needs them.
 // ============================================
-
-model ServiceProfile {
-  id            String      @id @default(cuid())
-  userId        String      @unique  // One service profile per user
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  // What they offer
-  category      JobCategory @default(OTHER)
-  customCategory String?    // When category=OTHER, free-text profession like "Gym Trainer"
-  title         String      // "Experienced North Indian Cook", "Personal Driver"
-  description   String      @db.Text
-  // Pricing
-  rate          Int?        // Numeric rate, e.g. 500
-  ratePeriod    String?     // "per day" | "per hour" | "per month" | "per visit" | "negotiable"
-  currency      String      @default("INR")
-  // Service area + availability
-  serviceArea   String?     // "Sector 21 Noida, NCR"
-  availability  String?     // "Mon-Fri, 9am-6pm" or "On call 24x7"
-  // Experience and signals
-  yearsExperience Int       @default(0)
-  languages     String[]    @default([])    // ["Hindi", "English", "Bhojpuri"]
-  skills        String[]    @default([])    // ["South Indian", "Continental", "Baking"]
-  // Visibility
-  isActive      Boolean     @default(true)
-  // Stats (denormalized)
-  avgRating     Float       @default(0)     // 0–5
-  ratingCount   Int         @default(0)
-  bookingCount  Int         @default(0)     // Times marked as hired/contacted
-  // Verification (admin can flag trusted providers)
-  isVerified    Boolean     @default(false)
-  reviews       ServiceReview[]
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-
-  @@index([category, isActive])
-  @@index([serviceArea])
-  @@index([avgRating])
-}
-
-model ServiceReview {
-  id          String         @id @default(cuid())
-  profileId   String
-  profile     ServiceProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  reviewerId  String
-  reviewer    User           @relation("ServiceReviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
-  rating      Int            // 1-5
-  comment     String?        @db.Text
-  // Was this person actually hired? Helps build trust
-  hired       Boolean        @default(false)
-  createdAt   DateTime       @default(now())
-
-  @@unique([profileId, reviewerId])  // One review per user per profile
-  @@index([profileId])
-}
-
 // ============================================
 // CLASSROOM EXTENSIONS
 // ============================================
@@ -1087,4 +1042,258 @@ enum AttendanceStatus {
   ABSENT
   LATE
   EXCUSED
+}
+// ============== SERVICES MARKETPLACE ==============
+
+enum ServiceCategory {
+  DRIVER
+  COOK
+  SALON_BEAUTY
+  HOUSEHOLD_HELP
+  SECURITY_GUARD
+  SHOP_RETAIL
+  EDUCATION_TUTOR
+  HEALTHCARE
+  TECH_IT
+  REPAIR_MAINTENANCE
+  DELIVERY_LOGISTICS
+  EVENT_SERVICES
+  CLEANING_SERVICES
+  OTHER
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  BUSY
+  OFFLINE
+  ON_LEAVE
+}
+
+enum BookingStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ServiceReportReason {
+  FAKE_PROFILE
+  SPAM
+  INAPPROPRIATE
+  FRAUD
+  POOR_QUALITY
+  HARASSMENT
+  OTHER
+}
+
+model ServiceProfile {
+  id              String              @id @default(cuid())
+  userId          String              @unique
+  user            User                @relation("UserServiceProfile", fields: [userId], references: [id], onDelete: Cascade)
+  displayName     String
+  category        ServiceCategory
+  customCategory  String?
+  bio             String?             @db.Text
+  experienceYears Int                 @default(0)
+  skills          String[]            @default([])
+  hourlyRate      Float?
+  fixedPrice      Float?
+  priceUnit       String              @default("hour")
+  currency        String              @default("INR")
+  contactPhone    String?
+  contactEmail    String?
+  latitude        Float
+  longitude       Float
+  addressLine     String?
+  city            String?
+  state           String?
+  pincode         String?
+  serviceRadiusKm Int                 @default(10)
+  availability    AvailabilityStatus  @default(AVAILABLE)
+  isVerified      Boolean             @default(false)
+  isActive        Boolean             @default(true)
+  avgRating       Float               @default(0)
+  totalReviews    Int                 @default(0)
+  totalBookings   Int                 @default(0)
+  portfolioImages String[]            @default([])
+  bookings        ServiceBooking[]
+  reviews         ServiceReview[]
+  favoritedBy     ServiceFavorite[]
+  reports         ServiceProviderReport[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([category])
+  @@index([latitude, longitude])
+  @@index([isActive, availability])
+}
+
+model ServiceBooking {
+  id              String          @id @default(cuid())
+  customerId      String
+  customer        User            @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: Cascade)
+  providerId      String
+  provider        ServiceProfile  @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  status          BookingStatus   @default(PENDING)
+  serviceAddress  String
+  latitude        Float?
+  longitude       Float?
+  pincode         String?
+  bookingDate     DateTime
+  startTime       String?
+  durationMinutes Int?
+  notes           String?         @db.Text
+  expectedPrice   Float?
+  finalPrice      Float?
+  providerNote    String?
+  cancelReason    String?
+  completedAt     DateTime?
+  review          ServiceReview?
+  chatThread      ServiceChat?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([customerId])
+  @@index([providerId])
+  @@index([status])
+}
+
+model ServiceReview {
+  id            String          @id @default(cuid())
+  bookingId     String          @unique
+  booking       ServiceBooking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customerId    String
+  customer      User            @relation("CustomerReviews", fields: [customerId], references: [id], onDelete: Cascade)
+  providerId    String
+  provider      ServiceProfile  @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  rating        Int
+  comment       String?         @db.Text
+  providerReply String?         @db.Text
+  createdAt     DateTime        @default(now())
+
+  @@index([providerId])
+}
+
+model ServiceFavorite {
+  id         String          @id @default(cuid())
+  userId     String
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  providerId String
+  provider   ServiceProfile  @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  createdAt  DateTime        @default(now())
+
+  @@unique([userId, providerId])
+}
+
+model ServiceChat {
+  id            String               @id @default(cuid())
+  bookingId     String               @unique
+  booking       ServiceBooking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customerId    String
+  providerId    String
+  messages      ServiceChatMessage[]
+  lastMessageAt DateTime?
+  createdAt     DateTime             @default(now())
+}
+
+model ServiceChatMessage {
+  id        String      @id @default(cuid())
+  chatId    String
+  chat      ServiceChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  senderId  String
+  content   String      @db.Text
+  read      Boolean     @default(false)
+  createdAt DateTime    @default(now())
+
+  @@index([chatId, createdAt])
+}
+
+model ServiceProviderReport {
+  id         String              @id @default(cuid())
+  providerId String
+  provider   ServiceProfile      @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  reporterId String
+  reporter   User                @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  reason     ServiceReportReason
+  details    String?             @db.Text
+  status     String              @default("PENDING")
+  reviewNote String?
+  createdAt  DateTime            @default(now())
+
+  @@unique([providerId, reporterId])
+}
+
+model JournalEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String   @db.Text
+  title     String?
+  aiInsight String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt])
+}
+
+model ParentStudent {
+  id              String   @id @default(cuid())
+  parentId        String
+  parent          User     @relation("ParentRelation", fields: [parentId], references: [id], onDelete: Cascade)
+  studentId       String
+  student         User     @relation("StudentRelation", fields: [studentId], references: [id], onDelete: Cascade)
+  status          String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  
+  // Visibility permissions controlled by student
+  allowAcademic   Boolean  @default(true)
+  allowAttendance Boolean  @default(true)
+  allowStress     Boolean  @default(true)
+  allowAptitude   Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([parentId, studentId])
+}
+
+model WellnessChannel {
+  id          String   @id @default(cuid())
+  name        String   // e.g. "NEET Aspirants Support", "Anonymous Venting"
+  description String?
+  isAnonymous Boolean  @default(false)
+  threads     WellnessThread[]
+  createdAt   DateTime @default(now())
+}
+
+model WellnessThread {
+  id          String   @id @default(cuid())
+  channelId   String
+  channel     WellnessChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  title       String
+  content     String   @db.Text
+  userId      String
+  user        User     @relation("UserWellnessThreads", fields: [userId], references: [id], onDelete: Cascade)
+  isAnonymous Boolean  @default(false)
+  comments    WellnessComment[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([channelId])
+  @@index([userId])
+}
+
+model WellnessComment {
+  id          String   @id @default(cuid())
+  threadId    String
+  thread      WellnessThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  content     String   @db.Text
+  userId      String
+  user        User     @relation("UserWellnessComments", fields: [userId], references: [id], onDelete: Cascade)
+  isAnonymous Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([threadId])
+  @@index([userId])
 }

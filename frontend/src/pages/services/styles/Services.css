@@ -1,0 +1,464 @@
+/* =============================================================
+   Services.css — Marketplace listing page
+   Light: black text on white. Dark: white text on dark.
+   ============================================================= */
+
+:root {
+  --svc-bg: #f8fafc;
+  --svc-card: #ffffff;
+  --svc-text: #0f172a;
+  --svc-text-muted: #64748b;
+  --svc-text-subtle: #94a3b8;
+  --svc-border: #e2e8f0;
+  --svc-input-bg: #ffffff;
+  --svc-input-border: #d1d5db;
+  --svc-primary: #6366f1;
+  --svc-primary-hover: #4f46e5;
+  --svc-primary-text: #ffffff;
+  --svc-accent: #06b6d4;
+  --svc-success: #10b981;
+  --svc-warning: #f59e0b;
+  --svc-danger: #ef4444;
+  --svc-active-bg: #eef2ff;
+  --svc-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
+  --svc-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --svc-bg: #0a0a0f;
+    --svc-card: #111118;
+    --svc-text: #fafaf8;
+    --svc-text-muted: #c8c8b8;
+    --svc-text-subtle: #a8a898;
+    --svc-border: rgba(255, 255, 255, 0.08);
+    --svc-input-bg: #0a0a0f;
+    --svc-input-border: rgba(255, 255, 255, 0.1);
+    --svc-primary: #8b5cf6;
+    --svc-primary-hover: #7c3aed;
+    --svc-active-bg: rgba(139, 92, 246, 0.12);
+    --svc-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --svc-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.6);
+  }
+}
+
+html.dark {
+  --svc-bg: #0a0a0f;
+  --svc-card: #111118;
+  --svc-text: #fafaf8;
+  --svc-text-muted: #c8c8b8;
+  --svc-text-subtle: #a8a898;
+  --svc-border: rgba(255, 255, 255, 0.08);
+  --svc-input-bg: #0a0a0f;
+  --svc-input-border: rgba(255, 255, 255, 0.1);
+  --svc-primary: #8b5cf6;
+  --svc-primary-hover: #7c3aed;
+  --svc-active-bg: rgba(139, 92, 246, 0.12);
+  --svc-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --svc-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+.svc-wrapper {
+  min-height: 100vh;
+  background: var(--svc-bg);
+  color: var(--svc-text);
+  padding: 1.5rem 2rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ── Header ───────────────────────────────────────────────────── */
+.svc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.svc-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--svc-text);
+  margin: 0 0 0.25rem;
+  letter-spacing: -0.02em;
+}
+
+.svc-subtitle {
+  font-size: 0.95rem;
+  color: var(--svc-text-muted);
+  margin: 0;
+}
+
+.svc-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ── Search ───────────────────────────────────────────────────── */
+.svc-search-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.svc-search-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--svc-input-border);
+  background: var(--svc-input-bg);
+  color: var(--svc-text);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.svc-search-input:focus {
+  border-color: var(--svc-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--svc-primary) 18%, transparent);
+}
+
+/* ── Filter row ───────────────────────────────────────────────── */
+.svc-filter-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.svc-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.svc-filter-label {
+  font-size: 0.85rem;
+  color: var(--svc-text-muted);
+}
+
+.svc-filter-input {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--svc-input-border);
+  background: var(--svc-input-bg);
+  color: var(--svc-text);
+  font-size: 0.9rem;
+  outline: none;
+  cursor: pointer;
+}
+
+/* ── Category chips ───────────────────────────────────────────── */
+.svc-category-row {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.5rem;
+  scrollbar-width: thin;
+}
+
+.svc-category-row::-webkit-scrollbar { height: 6px; }
+.svc-category-row::-webkit-scrollbar-thumb { background: var(--svc-border); border-radius: 3px; }
+
+.svc-cat-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--svc-border);
+  background: var(--svc-card);
+  color: var(--svc-text);
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.svc-cat-chip:hover {
+  border-color: var(--svc-primary);
+}
+
+.svc-cat-chip.active {
+  background: var(--svc-active-bg);
+  border-color: var(--svc-primary);
+  color: var(--svc-primary);
+  font-weight: 600;
+}
+
+.svc-cat-icon {
+  font-size: 1rem;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────── */
+.svc-btn-primary {
+  padding: 0.65rem 1.25rem;
+  border-radius: 10px;
+  border: none;
+  background: var(--svc-primary);
+  color: var(--svc-primary-text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: inherit;
+}
+
+.svc-btn-primary:hover { background: var(--svc-primary-hover); }
+
+.svc-btn-secondary {
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--svc-border);
+  background: var(--svc-card);
+  color: var(--svc-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.svc-btn-secondary:hover {
+  border-color: var(--svc-primary);
+  color: var(--svc-primary);
+}
+
+.svc-btn-text {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--svc-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.svc-btn-text:hover {
+  text-decoration: underline;
+}
+
+/* ── Provider grid ────────────────────────────────────────────── */
+.svc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.svc-card {
+  background: var(--svc-card);
+  border: 1px solid var(--svc-border);
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.svc-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--svc-shadow-hover);
+}
+
+.svc-card-image {
+  position: relative;
+  height: 160px;
+  background: linear-gradient(135deg, var(--svc-primary), var(--svc-accent));
+  overflow: hidden;
+}
+
+.svc-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.svc-card-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+}
+
+.svc-fav-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: transform 0.15s;
+}
+
+.svc-fav-btn:hover { transform: scale(1.1); }
+.svc-fav-btn.active { background: rgba(255, 255, 255, 1); }
+
+.svc-verified {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  padding: 0.2rem 0.55rem;
+  background: var(--svc-success);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 999px;
+}
+
+.svc-card-body {
+  padding: 0.85rem 1rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.svc-card-name {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--svc-text);
+  margin-bottom: 0.2rem;
+}
+
+.svc-card-cat {
+  font-size: 0.8rem;
+  color: var(--svc-text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.svc-card-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.svc-stars {
+  color: #facc15;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+}
+
+.svc-rating-num {
+  font-size: 0.8rem;
+  color: var(--svc-text-muted);
+}
+
+.svc-card-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--svc-text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.svc-status-available { color: var(--svc-success); font-weight: 600; }
+.svc-status-busy { color: var(--svc-warning); }
+.svc-status-offline { color: var(--svc-text-subtle); }
+.svc-status-on_leave { color: var(--svc-text-subtle); }
+
+.svc-card-price {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--svc-text);
+  margin-bottom: 0.75rem;
+}
+
+.svc-card-book {
+  width: 100%;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  border: none;
+  background: var(--svc-primary);
+  color: var(--svc-primary-text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: auto;
+  transition: background 0.15s;
+  font-family: inherit;
+}
+
+.svc-card-book:hover { background: var(--svc-primary-hover); }
+
+/* ── States ───────────────────────────────────────────────────── */
+.svc-loading {
+  text-align: center;
+  padding: 3rem;
+  color: var(--svc-text-muted);
+}
+
+.svc-empty {
+  text-align: center;
+  padding: 3rem;
+  color: var(--svc-text-muted);
+}
+
+.svc-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.svc-empty h3 {
+  color: var(--svc-text);
+  margin: 0 0 0.5rem;
+}
+
+.svc-error {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #b91c1c;
+  margin-bottom: 1rem;
+}
+
+html.dark .svc-error { color: #fca5a5; }
+
+/* ── Mobile ───────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .svc-wrapper {
+    padding: 1rem;
+  }
+  .svc-title {
+    font-size: 1.4rem;
+  }
+  .svc-header {
+    flex-direction: column;
+  }
+  .svc-header-actions {
+    width: 100%;
+  }
+  .svc-header-actions button {
+    flex: 1;
+    font-size: 0.8rem;
+  }
+  .svc-grid {
+    grid-template-columns: 1fr;
+  }
+  .svc-filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .svc-filter-group {
+    justify-content: space-between;
+  }
+  .svc-filter-input {
+    flex: 1;
+  }
+}

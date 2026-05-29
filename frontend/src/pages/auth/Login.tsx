@@ -41,7 +41,9 @@ export default function Login() {
       }
       navigate(target, { replace: true });
     } catch (err: any) {
-      setError(err?.response?.data?.error || 'Login failed. Check your email and password.');
+      const errData = err?.response?.data?.error;
+      const message = typeof errData === 'string' ? errData : errData?.message || 'Login failed. Check your email and password.';
+      setError(message);
     } finally {
       setLoading(false);
     }

@@ -267,7 +267,11 @@ export default function ProfileSetup() {
       // Refresh user from auth/me to get updated role + onboardingDone
       try {
         const { data } = await api.get('/auth/me');
-         useAuthStore.setState({ user: data.user || data });
+if (data?.user) {
+  useAuthStore.setState({ user: data.user });
+} else if (data?.id) {
+  useAuthStore.setState({ user: data });
+}
       } catch (e) {
         console.warn('fetchMe failed:', e);
       }
@@ -276,7 +280,10 @@ export default function ProfileSetup() {
       const role = selectedRoleIndex !== null ? ROLES[selectedRoleIndex] : null;
       navigate(role?.dashboard || '/dashboard', { replace: true });
     } catch (err: any) {
-      const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Failed to save profile. Please try again.';
+      const errData = err?.response?.data?.error;
+      const msg = typeof errData === 'string' 
+        ? errData 
+        : errData?.message || err?.response?.data?.message || err?.message || 'Failed to save profile. Please try again.';
       console.error('ProfileSetup submit error:', err?.response?.data || err);
       setError(msg);
     } finally {

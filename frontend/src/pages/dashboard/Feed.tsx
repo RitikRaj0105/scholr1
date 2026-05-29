@@ -35,7 +35,7 @@ export default function Feed() {
   const [searchInput, setSearchInput] = useState('');
   const navigate = useNavigate();
 
-  const { data, isLoading } = useQuery<{ items: FeedItem[] }>({
+  const { data, isLoading } = useQuery<{ items: FeedItem[]; users?: any[] }>({
     queryKey: ['unified-feed', tab, search],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -47,6 +47,7 @@ export default function Feed() {
   });
 
   const items = data?.items || [];
+  const users = data?.users || [];
 
   return (
     <DashboardLayout>
@@ -126,6 +127,28 @@ export default function Feed() {
               <span className="text-xs text-violet-400">Open →</span>
             </div>
           </Link>
+        )}
+        {/* User search results */}
+        {users.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">People</h3>
+            {users.map((u: any) => (
+              <Link
+                key={u.id}
+                to={`/dashboard/profile/${u.id}`}
+                className="flex items-center gap-3 p-3 rounded-xl border border-zinc-800 bg-zinc-900 hover:border-violet-500/30 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-full bg-violet-600 flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
+                  {u.avatarUrl ? <img src={u.avatarUrl} alt="" className="w-full h-full object-cover" /> : (u.firstName?.[0] || '?')}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-white truncate">{u.firstName} {u.lastName}</div>
+                  <div className="text-xs text-zinc-400 truncate">{u.headline || u.role}</div>
+                </div>
+                {u.city && <span className="text-xs text-zinc-500">{u.city}</span>}
+              </Link>
+            ))}
+          </div>
         )}
 
         {/* Feed items */}

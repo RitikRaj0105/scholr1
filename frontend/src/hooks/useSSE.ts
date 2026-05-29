@@ -56,20 +56,35 @@ export function useSSE(opts: UseSSEOptions = {}) {
             // Each SSE event: lines like "event: delta\ndata: {...}"
             const eventMatch = line.match(/^event:\s*(\w+)/m);
             const dataMatch = line.match(/^data:\s*(.+)$/m);
-            const event = eventMatch?.[1] || 'message';
-            const data = dataMatch?.[1] || '';
+            const rawEvent = eventMatch?.[1] || 'message';
+            const rawData = dataMatch?.[1] || '';
+
+            let event = rawEvent;
+            let data = rawData;
+
+            if (rawEvent === 'message') {
+              try {
+                const parsed = JSON.parse(rawData);
+                if (parsed.type) {
+                  event = parsed.type;
+                  data = parsed.content ?? parsed.message ?? rawData;
+                }
+              } catch {
+                // not JSON
+              }
+            }
 
             if (event === 'delta') {
               try {
-                const parsed = JSON.parse(data);
-                opts.onDelta?.(parsed.text || '');
+                const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+                opts.onDelta?.(parsed.text || parsed.content || data);
               } catch {
                 opts.onDelta?.(data);
               }
             } else if (event === 'done') {
               opts.onDone?.();
             } else if (event === 'error') {
-              opts.onError?.(new Error(data));
+              opts.onError?.(new Error(typeof data === 'string' ? data : JSON.stringify(data)));
             }
           }
         }

@@ -135,8 +135,8 @@ export async function unifiedFeed(req: Request, res: Response) {
     };
     if (search) {
       where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
+        { displayName: { contains: search, mode: 'insensitive' } },
+        { bio: { contains: search, mode: 'insensitive' } },
         { customCategory: { contains: search, mode: 'insensitive' } },
       ];
     }
@@ -167,5 +167,31 @@ export async function unifiedFeed(req: Request, res: Response) {
   // When filter is specific, items are already same-type and just need sort.
   items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-  res.json({ items: items.slice(0, limit * 2) });
+  // Search users if search query exists
+  let users: any[] = [];
+  if (search) {
+    users = await prisma.user.findMany({
+      where: {
+        id: { notIn: Array.from(blockedUserIds) },
+        OR: [
+          { firstName: { contains: search, mode: 'insensitive' } },
+          { lastName: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+          { headline: { contains: search, mode: 'insensitive' } },
+        ],
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        avatarUrl: true,
+        headline: true,
+        role: true,
+        city: true,
+      },
+      take: 10,
+    });
+  }
+
+  res.json({ items: items.slice(0, limit * 2), users });
 }

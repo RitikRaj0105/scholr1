@@ -13,10 +13,11 @@ import notificationRoutes from './notification.routes.js';
 import profileRoutes from './profile.routes.js';
 import messagesRoutes from './messages.routes.js';
 import jobsRoutes from './jobs.routes.js';
-import servicesRoutes from './services.routes.js';
+import wellnessRoutes from './wellness.routes.js';
+
 import feedRoutes from './feed.routes.js';
 import classroomRoutes from './classroom.routes.js';
-
+import serviceMarketplaceRoutes from './serviceMarketplace.routes.js';
 const router = Router();
 
 router.get('/health', (_req, res) => {
@@ -42,8 +43,9 @@ router.use('/notifications', notificationRoutes);
 router.use('/profile', profileRoutes);
 router.use('/messages', messagesRoutes);
 router.use('/jobs', jobsRoutes);
-router.use('/services', servicesRoutes);
+router.use('/wellness', wellnessRoutes);
+
 router.use('/feed', feedRoutes);
 router.use('/classroom', classroomRoutes);
-
+router.use('/services', serviceMarketplaceRoutes);
 export default router;
