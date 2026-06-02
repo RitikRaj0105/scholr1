@@ -345,7 +345,6 @@ export async function respondToBooking(req: Request, res: Response) {
     where: { id: bookingId },
     data: {
       status: newStatus,
-      respondedAt: new Date(),
       providerNote,
     },
   });
@@ -435,8 +434,6 @@ export async function cancelBooking(req: Request, res: Response) {
     where: { id: bookingId },
     data: {
       status: 'CANCELLED',
-      cancelledAt: new Date(),
-      cancelledById: userId,
       cancelReason: reason,
     },
   });
@@ -577,7 +574,7 @@ export async function replyToReview(req: Request, res: Response) {
 
   const updated = await prisma.serviceReview.update({
     where: { id: reviewId },
-    data: { providerReply: reply, repliedAt: new Date() },
+    data: { providerReply: reply },
   });
 
   res.json(updated);
@@ -756,7 +753,6 @@ export async function adminReviewReport(req: Request, res: Response) {
     where: { id: reportId },
     data: {
       status: action === 'DISMISS' ? 'DISMISSED' : 'REVIEWED',
-      reviewerId: userId,
       reviewNote: note,
     },
   });

@@ -14,4 +14,10 @@ router.get('/chats/:id', asyncHandler(ctrl.getChat));
 router.delete('/chats/:id', asyncHandler(ctrl.deleteChat));
 router.post('/chats/:id/messages', aiLimiter, asyncHandler(ctrl.sendMessage));
 
+router.post('/explain', aiLimiter, asyncHandler(ctrl.explainTopicHandler));
+router.post('/quiz', aiLimiter, asyncHandler(ctrl.generateQuizHandler));
+router.post('/lesson-plan', aiLimiter, asyncHandler(ctrl.generateLessonPlanHandler));
+router.post('/evaluate', aiLimiter, asyncHandler(ctrl.evaluateDescriptiveAnswerHandler));
+router.get('/analytics', aiLimiter, asyncHandler(ctrl.getClassroomAIAnalyticsHandler));
+
 export default router;

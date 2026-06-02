@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
+import { prisma } from '../config/prisma.js';
 
 export type MentorMode = 'general' | 'study' | 'career' | 'wellness' | 'coding';
 
@@ -139,6 +140,256 @@ Output schema:
 }`,
       },
     ],
+  });
+
+  const text = res.choices[0]?.message?.content ?? '{}';
+  return JSON.parse(text);
+};
+
+export const explainTopic = async (topic: string, depth: 'brief' | 'detailed') => {
+  if (!client) {
+    return {
+      explanation: 'AI is currently offline. Topic: ' + topic,
+      analogy: 'N/A',
+      summary: 'N/A',
+      keyTakeaways: []
+    };
+  }
+
+  const prompt = `Provide a ${depth} explanation of the topic: "${topic}".
+Include a clear, vivid analogy to make it easy to understand.
+Provide a summary and a list of key takeaways.
+Output format must be JSON:
+{
+  "explanation": "string (markdown formatted explanation)",
+  "analogy": "string (analogy to real life)",
+  "summary": "string (one sentence summary)",
+  "keyTakeaways": ["string", "string", ...]
+}`;
+
+  const res = await client.chat.completions.create({
+    model: env.OPENAI_MODEL,
+    response_format: { type: 'json_object' },
+    temperature: 0.5,
+    messages: [
+      { role: 'system', content: 'You are an expert tutor. Output strictly valid JSON matching the requested schema.' },
+      { role: 'user', content: prompt }
+    ]
+  });
+
+  return JSON.parse(res.choices[0]?.message?.content ?? '{}');
+};
+
+export const generatePracticeQuiz = async (topic: string, difficulty: 'EASY' | 'MEDIUM' | 'HARD', count: number) => {
+  if (!client) {
+    return {
+      title: 'Practice Quiz',
+      questions: [
+        {
+          prompt: 'Sample Question for ' + topic,
+          options: ['Option A', 'Option B', 'Option C', 'Option D'],
+          correctAnswer: 'Option A',
+          explanation: 'Sample explanation'
+        }
+      ]
+    };
+  }
+
+  const prompt = `Generate a ${difficulty} difficulty quiz on "${topic}" with ${count} multiple choice questions.
+Output format must be JSON:
+{
+  "title": "string",
+  "questions": [
+    {
+      "prompt": "string",
+      "options": ["string", "string", "string", "string"],
+      "correctAnswer": "string (exact match of the correct option)",
+      "explanation": "string"
+    }
+  ]
+}`;
+
+  const res = await client.chat.completions.create({
+    model: env.OPENAI_MODEL,
+    response_format: { type: 'json_object' },
+    temperature: 0.5,
+    messages: [
+      { role: 'system', content: 'You are an expert quiz generator. Output strictly valid JSON matching the requested schema.' },
+      { role: 'user', content: prompt }
+    ]
+  });
+
+  return JSON.parse(res.choices[0]?.message?.content ?? '{}');
+};
+
+export const generateLessonPlan = async (subject: string, topic: string, syllabus: string, targetDurationMinutes: number) => {
+  if (!client) {
+    return {
+      title: 'Lesson Plan',
+      objectives: ['Sample learning objective'],
+      outline: [
+        { timeframe: '0-10m', activity: 'Introduction', description: 'Introduce the topic' }
+      ],
+      homework: 'Sample homework task'
+    };
+  }
+
+  const prompt = `Generate a lesson plan for Subject: "${subject}", Topic: "${topic}", matching Syllabus: "${syllabus}".
+Target duration: ${targetDurationMinutes} minutes.
+Output format must be JSON:
+{
+  "title": "string",
+  "objectives": ["string", "string", ...],
+  "outline": [
+    {
+      "timeframe": "string (e.g. 0-10 mins)",
+      "activity": "string (title of phase)",
+      "description": "string (what the teacher does)"
+    }
+  ],
+  "homework": "string (suggested homework assignment)"
+}`;
+
+  const res = await client.chat.completions.create({
+    model: env.OPENAI_MODEL,
+    response_format: { type: 'json_object' },
+    temperature: 0.5,
+    messages: [
+      { role: 'system', content: 'You are an expert lesson planner for teachers. Output strictly valid JSON matching the requested schema.' },
+      { role: 'user', content: prompt }
+    ]
+  });
+
+  return JSON.parse(res.choices[0]?.message?.content ?? '{}');
+};
+
+export const evaluateDescriptiveAnswer = async (questionPrompt: string, studentAnswer: string, sampleSolution: string | null) => {
+  if (!client) {
+    return {
+      grade: 7,
+      feedback: 'AI evaluation is offline. Feedback is simulated.',
+      strengths: ['Answer was submitted'],
+      improvements: ['Configure AI API key for actual evaluation']
+    };
+  }
+
+  const prompt = `Evaluate the student's answer to the question.
+Question: "${questionPrompt}"
+Student's Answer: "${studentAnswer}"
+${sampleSolution ? `Sample Solution / Criteria: "${sampleSolution}"` : ''}
+
+Output format must be JSON:
+{
+  "grade": number (score from 0 to 10),
+  "feedback": "string (detailed review of their answer)",
+  "strengths": ["string", "string", ...],
+  "improvements": ["string", "string", ...]
+}`;
+
+  const res = await client.chat.completions.create({
+    model: env.OPENAI_MODEL,
+    response_format: { type: 'json_object' },
+    temperature: 0.3,
+    messages: [
+      { role: 'system', content: 'You are an academic grader. Be fair, encouraging, and rigorous. Output strictly valid JSON.' },
+      { role: 'user', content: prompt }
+    ]
+  });
+
+  return JSON.parse(res.choices[0]?.message?.content ?? '{}');
+};
+
+export const getClassroomAIAnalytics = async (classroomId: string) => {
+  if (!client) {
+    return {
+      weakTopics: [
+        { topic: 'Topic 1', averageScore: 60, recommendation: 'Revise fundamental concepts and exercises.' }
+      ],
+      atRiskStudents: [],
+      classStatusSummary: 'AI analysis is offline. Please configure OPENAI_API_KEY.',
+      remedialLearningPath: ['Read textbook chapters 1-3', 'Attempt practice quizzes']
+    };
+  }
+
+  const classroom = await prisma.classroom.findUnique({
+    where: { id: classroomId },
+    include: {
+      enrollments: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              examAttempts: {
+                where: { exam: { classroomId } },
+                select: { score: true, exam: { select: { title: true, totalMarks: true } } }
+              },
+              submissions: {
+                where: { assignment: { classroomId } },
+                select: { marks: true, status: true, assignment: { select: { title: true, totalMarks: true } } }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  if (!classroom) throw new Error('Classroom not found');
+
+  const studentsSummary = classroom.enrollments.map(e => {
+    const name = `${e.user.firstName} ${e.user.lastName}`;
+    const attempts = e.user.examAttempts.map(a => `${a.exam.title}: ${a.score}/${a.exam.totalMarks}`);
+    const submissions = e.user.submissions.map(s => `${s.assignment.title}: ${s.marks}/${s.assignment.totalMarks} (${s.status})`);
+    return {
+      name,
+      id: e.user.id,
+      attempts,
+      submissions
+    };
+  });
+
+  const prompt = `Analyze this classroom performance and generate academic insights.
+Classroom Name: ${classroom.name}
+Subject: ${classroom.subject || 'N/A'}
+Number of Students: ${classroom.enrollments.length}
+
+Students Performance Data:
+${JSON.stringify(studentsSummary, null, 2)}
+
+Provide a JSON response with the following format:
+{
+  "weakTopics": [
+    {
+      "topic": "string (name of weak topic/concept)",
+      "averageScore": number (estimated percentage average e.g. 55),
+      "recommendation": "string (remedial study action)"
+    }
+  ],
+  "atRiskStudents": [
+    {
+      "studentName": "string",
+      "studentId": "string",
+      "reason": "string (why are they at risk? e.g. failing exam X or missing assignment Y)",
+      "remedialAction": "string (specific action for this student)"
+    }
+  ],
+  "classStatusSummary": "string (1-2 paragraph overview of how the class is doing overall)",
+  "remedialLearningPath": [
+    "string (step 1 of learning path)",
+    "string (step 2 of learning path)"
+  ]
+}`;
+
+  const res = await client.chat.completions.create({
+    model: env.OPENAI_MODEL,
+    response_format: { type: 'json_object' },
+    temperature: 0.4,
+    messages: [
+      { role: 'system', content: 'You are an educational analytics AI. Output strictly valid JSON matching the requested schema.' },
+      { role: 'user', content: prompt }
+    ]
   });
 
   const text = res.choices[0]?.message?.content ?? '{}';

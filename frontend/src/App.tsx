@@ -10,6 +10,7 @@ import Signup from './pages/auth/Signup';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import Dashboard from './pages/dashboard/Dashboard';
 import AIMentor from './pages/dashboard/AIMentor';
+import AIAssistant from './pages/dashboard/AIAssistant';
 import FocusMode from './pages/dashboard/FocusMode';
 import Tests from './pages/dashboard/Tests';
 import TestTake from './pages/dashboard/TestTake';
@@ -93,6 +94,14 @@ function App() {
         element={
           <ProtectedRoute>
             <AIMentor />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/ai-assistant"
+        element={
+          <ProtectedRoute>
+            <AIAssistant />
           </ProtectedRoute>
         }
       />

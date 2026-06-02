@@ -156,11 +156,10 @@ export const getProfile = async (req: Request, res: Response) => {
     _experienceCount: user.workExperiences.length,
   });
 
-  // Is viewer following?
   let isFollowedByMe = false;
   if (viewerId && viewerId !== targetId) {
     const follow = await prisma.follow.findUnique({
-      where: { followerId_followingId: { followerId: viewerId, followingId: targetId } },
+      where: { followerId_followingId: { followerId: viewerId!, followingId: targetId as string } },
     });
     isFollowedByMe = !!follow;
   }
@@ -215,7 +214,7 @@ export const updateProfile = async (req: Request, res: Response) => {
   // consistent without the user having to update both places.
   const svcProfile = await prisma.serviceProfile.findUnique({
     where: { userId },
-    select: { id: true, skills: true, serviceArea: true },
+    select: { id: true, skills: true, city: true, state: true },
   });
   if (svcProfile) {
     const syncPatch: any = {};
@@ -226,11 +225,9 @@ export const updateProfile = async (req: Request, res: Response) => {
       syncPatch.skills = merged;
     }
 
-    // If location changed and service profile didn't have a custom area, sync it
-    if ((data.city || data.state) && !svcProfile.serviceArea) {
-      const parts = [data.city || user.city, data.state || user.state].filter(Boolean);
-      if (parts.length) syncPatch.serviceArea = parts.join(', ');
-    }
+    // If location changed, sync it
+    if (data.city) syncPatch.city = data.city;
+    if (data.state) syncPatch.state = data.state;
 
     if (Object.keys(syncPatch).length > 0) {
       await prisma.serviceProfile.update({ where: { userId }, data: syncPatch });
@@ -464,7 +461,7 @@ Respond with ONLY a JSON object (no markdown, no extra text):
     });
 
     if (ollamaRes.ok) {
-      const data = await ollamaRes.json();
+      const data = (await ollamaRes.json()) as any;
       const text = (data.response || '').replace(/```json|```/g, '').trim();
       const parsed = JSON.parse(text);
       suggestions = parsed.suggestions || [];

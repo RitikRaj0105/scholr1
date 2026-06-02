@@ -2,7 +2,7 @@ import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 
 const JUDGE0_URL = process.env.JUDGE0_URL || 'http://localhost:2358';
-const JUDGE0_AUTH_HEADER = process.env.JUDGE0_AUTH_TOKEN
+const JUDGE0_AUTH_HEADER: Record<string, string> = process.env.JUDGE0_AUTH_TOKEN
   ? { 'X-Auth-Token': process.env.JUDGE0_AUTH_TOKEN }
   : {};
 

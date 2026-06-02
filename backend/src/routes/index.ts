@@ -14,6 +14,7 @@ import profileRoutes from './profile.routes.js';
 import messagesRoutes from './messages.routes.js';
 import jobsRoutes from './jobs.routes.js';
 import wellnessRoutes from './wellness.routes.js';
+import lmsRoutes from './lms.routes.js';
 
 import feedRoutes from './feed.routes.js';
 import classroomRoutes from './classroom.routes.js';
@@ -44,6 +45,7 @@ router.use('/profile', profileRoutes);
 router.use('/messages', messagesRoutes);
 router.use('/jobs', jobsRoutes);
 router.use('/wellness', wellnessRoutes);
+router.use('/lms', lmsRoutes);
 
 router.use('/feed', feedRoutes);
 router.use('/classroom', classroomRoutes);

@@ -94,7 +94,7 @@ export const updateTask = async (req: Request, res: Response) => {
   const completedAt =
     data.status === 'DONE'
       ? new Date()
-      : data.status && data.status !== 'DONE'
+      : data.status
       ? null
       : undefined;
 

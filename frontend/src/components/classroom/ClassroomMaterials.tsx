@@ -188,7 +188,7 @@ function AddMaterial({ classroomId, onClose }: { classroomId: string; onClose: (
               return (
                 <button
                   key={t}
-                  onClick={() => setForm((p) => ({ ...p, type: t }))}
+                  onClick={() => setForm((p) => ({ ...p, type: t as any }))}
                   className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border text-[11px] font-medium transition-all ${
                     active ? `${TYPE_COLORS[t]} border-current` : 't-border border t-text-secondary hover:t-border-strong'
                   }`}

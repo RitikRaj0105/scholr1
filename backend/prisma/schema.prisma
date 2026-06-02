@@ -445,6 +445,7 @@ model Classroom {
   announcements ClassroomAnnouncement[]
   materials     ClassroomMaterial[]
   attendance    AttendanceSession[]
+  timetableSlots TimetableSlot[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -514,6 +515,10 @@ model Exam {
   classroomId   String?
   classroom     Classroom?   @relation(fields: [classroomId], references: [id])
   generatedByAI Boolean      @default(false)
+  negativeMarking   Float     @default(0.0)
+  randomizeQuestions Boolean   @default(false)
+  randomizeOptions   Boolean   @default(false)
+  isPrivate          Boolean   @default(true)
   questions     Question[]
   attempts      ExamAttempt[]
   createdAt     DateTime     @default(now())
@@ -1296,4 +1301,15 @@ model WellnessComment {
 
   @@index([threadId])
   @@index([userId])
+}
+
+model TimetableSlot {
+  id          String    @id @default(cuid())
+  classroomId String
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  dayOfWeek   String    // MONDAY, TUESDAY, etc.
+  startTime   String    // e.g. "09:00"
+  endTime     String    // e.g. "10:30"
+  subject     String
+  roomName    String?
 }

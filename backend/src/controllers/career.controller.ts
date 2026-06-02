@@ -203,7 +203,7 @@ async function computeMatchScore(userId: string, career: Career): Promise<number
       const type = a.exam.type.toLowerCase();
       if (!typeScores[type]) typeScores[type] = { total: 0, earned: 0 };
       typeScores[type].total += a.exam.totalMarks;
-      typeScores[type].earned += a.score;
+      typeScores[type].earned += a.score ?? 0;
     }
 
     let relatedHits = 0;
@@ -315,7 +315,7 @@ export const getCareer = async (req: Request, res: Response) => {
           (skillLower.includes(subject) ||
             subject.includes(skillLower.split('/')[0].toLowerCase()))
         ) {
-          const pct = a.exam.totalMarks > 0 ? (a.score / a.exam.totalMarks) * 100 : 0;
+          const pct = a.exam.totalMarks > 0 ? ((a.score ?? 0) / a.exam.totalMarks) * 100 : 0;
           level = Math.max(level, Math.round(pct));
         }
       }

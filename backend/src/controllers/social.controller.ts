@@ -414,11 +414,11 @@ export const getUserPosts = async (req: Request, res: Response) => {
     where: { followerId_followingId: { followerId: viewerId, followingId: targetId } },
   });
 
-  const visibilityFilter = isMe
+  const visibilityFilter: any = isMe
     ? {}
     : isFollower
-    ? { visibility: { in: ['PUBLIC', 'FOLLOWERS_ONLY'] as const } }
-    : { visibility: 'PUBLIC' as const };
+    ? { visibility: { in: ['PUBLIC', 'FOLLOWERS_ONLY'] } }
+    : { visibility: 'PUBLIC' };
 
   const posts = await prisma.post.findMany({
     where: { userId: targetId, ...visibilityFilter },
@@ -431,7 +431,7 @@ export const getUserPosts = async (req: Request, res: Response) => {
     take: 50,
   });
 
-  const items = posts.map((p) => ({
+  const items = posts.map((p: any) => ({
     ...p,
     isLikedByMe: p.likes.length > 0,
     likes: undefined,

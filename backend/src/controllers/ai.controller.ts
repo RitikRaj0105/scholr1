@@ -1,7 +1,16 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../config/prisma.js';
-import { streamCompletion, type MentorMode, type ChatMsg } from '../services/ai.service.js';
+import {
+  streamCompletion,
+  type MentorMode,
+  type ChatMsg,
+  explainTopic,
+  generatePracticeQuiz,
+  generateLessonPlan,
+  evaluateDescriptiveAnswer,
+  getClassroomAIAnalytics
+} from '../services/ai.service.js';
 import { NotFound } from '../utils/errors.js';
 
 const sendMessageSchema = z.object({
@@ -125,4 +134,61 @@ export const sendMessage = async (req: Request, res: Response) => {
   } finally {
     res.end();
   }
+};
+
+export const explainTopicHandler = async (req: Request, res: Response) => {
+  const schema = z.object({
+    topic: z.string().min(1),
+    depth: z.enum(['brief', 'detailed']).default('brief'),
+  });
+  const data = schema.parse(req.body);
+  const result = await explainTopic(data.topic, data.depth);
+  res.json({ ok: true, ...result });
+};
+
+export const generateQuizHandler = async (req: Request, res: Response) => {
+  const schema = z.object({
+    topic: z.string().min(1),
+    difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).default('MEDIUM'),
+    count: z.number().int().min(1).max(20).default(5),
+  });
+  const data = schema.parse(req.body);
+  const result = await generatePracticeQuiz(data.topic, data.difficulty, data.count);
+  res.json({ ok: true, ...result });
+};
+
+export const generateLessonPlanHandler = async (req: Request, res: Response) => {
+  const schema = z.object({
+    subject: z.string().min(1),
+    topic: z.string().min(1),
+    syllabus: z.string().min(1),
+    targetDurationMinutes: z.number().int().min(5).max(300).default(60),
+  });
+  const data = schema.parse(req.body);
+  const result = await generateLessonPlan(data.subject, data.topic, data.syllabus, data.targetDurationMinutes);
+  res.json({ ok: true, ...result });
+};
+
+export const evaluateDescriptiveAnswerHandler = async (req: Request, res: Response) => {
+  const schema = z.object({
+    questionPrompt: z.string().min(1),
+    studentAnswer: z.string().min(1),
+    sampleSolution: z.string().nullable().optional(),
+  });
+  const data = schema.parse(req.body);
+  const result = await evaluateDescriptiveAnswer(
+    data.questionPrompt,
+    data.studentAnswer,
+    data.sampleSolution || null
+  );
+  res.json({ ok: true, ...result });
+};
+
+export const getClassroomAIAnalyticsHandler = async (req: Request, res: Response) => {
+  const classroomId = req.query.classroomId as string;
+  if (!classroomId) {
+    throw new Error('classroomId query parameter is required');
+  }
+  const result = await getClassroomAIAnalytics(classroomId);
+  res.json({ ok: true, ...result });
 };

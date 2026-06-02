@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Brain, Target, BookOpen, Code2,
   Briefcase, Heart, Users, Settings, LogOut, CalendarDays, ShieldCheck,
-  GraduationCap, MessageSquare, Send, HardHat, Wrench, Layers,
+  GraduationCap, MessageSquare, Send, HardHat, Wrench, Layers, Sparkles
 } from 'lucide-react';
 import { useAuthStore, isAdmin, isTeacher } from '@/store/authStore';
 import { Avatar } from '@/components/social/Avatar';
@@ -20,6 +20,7 @@ const navItems = [
   { to: '/dashboard/services', icon: Wrench, label: 'Services' },
   { to: '/dashboard/planner', icon: CalendarDays, label: 'Planner' },
   { to: '/dashboard/ai', icon: Brain, label: 'AI Mentor' },
+  { to: '/dashboard/ai-assistant', icon: Sparkles, label: 'AI Assistant' },
   { to: '/dashboard/focus', icon: Target, label: 'Focus Mode' },
   { to: '/dashboard/tests', icon: BookOpen, label: 'Tests' },
   { to: '/dashboard/code', icon: Code2, label: 'Coding' },
